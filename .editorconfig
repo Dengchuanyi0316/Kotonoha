@@ -1,0 +1,18 @@
+# 代码格式统一配置文件
+# 匹配所有 JavaScript、TypeScript、Vue、CSS 及其预处理器文件
+[*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue,css,scss,sass,less,styl}]
+  # 设置文件字符编码为 UTF-8
+  charset = utf-8
+  # 设置缩进大小为 2 个字符
+  indent_size = 2
+  # 设置缩进风格为空格
+  indent_style = space
+  # 文件末尾插入一个空行
+  insert_final_newline = true
+  # 去除行尾多余的空白字符
+  trim_trailing_whitespace = true
+
+  # 设置换行符为 LF（Unix 风格）
+  end_of_line = lf
+  # 设置每行最大字符数为 100
+  max_line_length = 100

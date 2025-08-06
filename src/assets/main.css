@@ -1,0 +1,54 @@
+/* 引入基础样式文件，该文件定义了颜色变量、通用样式等 */
+@import './base.css';
+
+/* 对 id 为 app 的元素设置样式 */
+#app {
+  /* 设置最大宽度为 1280px，防止内容过宽 */
+  /*max-width: 1280px;*/
+  /* 水平居中显示 */
+  margin: 0 auto;
+  /* 设置内边距为 2rem */
+  padding: 2rem;
+  /* 设置字体粗细为正常 */
+  font-weight: normal;
+}
+
+/* 对 a 标签和类名为 green 的元素设置样式 */
+a,
+.green {
+  /* 去除下划线 */
+  text-decoration: none;
+  /* 设置文字颜色为特定的绿色 */
+  color: hsla(160, 100%, 37%, 1);
+  /* 添加 0.4 秒的过渡效果，使颜色变化更平滑 */
+  transition: 0.4s;
+  /* 设置内边距为 3px */
+  padding: 3px;
+}
+
+/* 当设备支持悬停事件时，对 a 标签悬停状态设置样式 */
+@media (hover: hover) {
+  a:hover {
+    /* 悬停时设置背景颜色为特定绿色的半透明色 */
+    background-color: hsla(160, 100%, 37%, 0.2);
+  }
+}
+
+/* 当屏幕宽度大于等于 1024px 时，设置响应式样式 */
+/*@media (min-width: 1024px) {*/
+/*  body {*/
+/*    !* 使用 flex 布局 *!*/
+/*    display: flex;*/
+/*    !* 使内容在交叉轴和主轴上都居中显示 *!*/
+/*    place-items: center;*/
+/*  }*/
+
+/*  #app {*/
+/*    !* 使用网格布局 *!*/
+/*    display: grid;*/
+/*    !* 设置网格列模板为两列，每列宽度为 1fr *!*/
+/*    grid-template-columns: 1fr 1fr;*/
+/*    !* 设置内边距为左右 2rem *!*/
+/*    padding: 0 2rem;*/
+/*  }*/
+/*}*/
