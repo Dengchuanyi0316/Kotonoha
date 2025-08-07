@@ -8,6 +8,9 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AddIcon: typeof import('./components/icons/AddIcon.vue')['default']
+    BoldIcon: typeof import('./components/icons/BoldIcon.vue')['default']
+    BulletListIcon: typeof import('./components/icons/BulletListIcon.vue')['default']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBacktop: typeof import('element-plus/es')['ElBacktop']
     ElButton: typeof import('element-plus/es')['ElButton']
@@ -24,15 +27,24 @@ declare module 'vue' {
     ElMenu: typeof import('element-plus/es')['ElMenu']
     ElMenuItem: typeof import('element-plus/es')['ElMenuItem']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    HiddenIcon: typeof import('./components/icons/HiddenIcon.vue')['default']
     IconCommunity: typeof import('./components/icons/IconCommunity.vue')['default']
     IconDocumentation: typeof import('./components/icons/IconDocumentation.vue')['default']
     IconEcosystem: typeof import('./components/icons/IconEcosystem.vue')['default']
     IconSupport: typeof import('./components/icons/IconSupport.vue')['default']
     IconTooling: typeof import('./components/icons/IconTooling.vue')['default']
+    ItalicIcon: typeof import('./components/icons/ItalicIcon.vue')['default']
     NavBar: typeof import('./components/NavBar.vue')['default']
+    OrderedListIcon: typeof import('./components/icons/OrderedListIcon.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SaveIcon: typeof import('./components/icons/SaveIcon.vue')['default']
+    StrikeIcon: typeof import('./components/icons/StrikeIcon.vue')['default']
+    TextAlignCenterIcon: typeof import('./components/icons/TextAlignCenterIcon.vue')['default']
+    TextAlignLeftIcon: typeof import('./components/icons/TextAlignLeftIcon.vue')['default']
+    TextAlignRightIcon: typeof import('./components/icons/TextAlignRightIcon.vue')['default']
     TheWelcome: typeof import('./components/TheWelcome.vue')['default']
+    UnderlineIcon: typeof import('./components/icons/UnderlineIcon.vue')['default']
     WelcomeItem: typeof import('./components/WelcomeItem.vue')['default']
   }
 }

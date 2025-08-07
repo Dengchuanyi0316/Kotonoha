@@ -36,50 +36,106 @@
     <div class="editor-panel" :class="{ full: !showOutline }">
       <div class="toolbar-wrapper">
         <div class="editor-toolbar">
-          <el-button @click="toggleOutline" size="small">
-            {{ showOutline ? '隐藏大纲' : '显示大纲' }}
-          </el-button>
+          <el-button
+              circle
+              size="large"
+              @click="toggleOutline"
+            >
+              <HiddenIcon size="24" />
+            </el-button>
         </div>
 
         <div class="editor-controls">
-          <!-- Tiptap工具栏 -->
           <div class="tiptap-toolbar">
-            <el-button size="small" @click="editor.chain().focus().toggleBold().run()" :disabled="!editor">
-              <b>B</b>
+
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('bold') }"
+              @click="editor && editor.chain().focus().toggleBold().run()"
+            >
+              <BoldIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().toggleItalic().run()" :disabled="!editor">
-              <i>I</i>
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('italic') }"
+              @click="editor && editor.chain().focus().toggleItalic().run()"
+            >
+              <ItalicIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().toggleUnderline().run()" :disabled="!editor">
-              <u>U</u>
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('underline') }"
+              @click="editor && editor.chain().focus().toggleUnderline().run()"
+            >
+              <UnderlineIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().toggleStrike().run()" :disabled="!editor">
-              <s>S</s>
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('strike') }"
+              @click="editor && editor.chain().focus().toggleStrike().run()"
+            >
+              <StrikeIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().toggleBulletList().run()" :disabled="!editor">
-              • 列表
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('bulletList') }"
+              @click="editor && editor.chain().focus().toggleBulletList().run()"
+            >
+              <BulletListIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().toggleOrderedList().run()" :disabled="!editor">
-              1. 编号
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('orderedList') }"
+              @click="editor && editor.chain().focus().toggleOrderedList().run()"
+            >
+              <OrderedListIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().setTextAlign('left').run()" :disabled="!editor">
-              左对齐
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('textAlign', { align: 'left' }) }"
+              @click="editor && editor.chain().focus().setTextAlign('left').run()"
+            >
+              <TextAlignLeftIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().setTextAlign('center').run()" :disabled="!editor">
-              居中
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('textAlign', { align: 'center' }) }"
+              @click="editor && editor.chain().focus().setTextAlign('center').run()"
+            >
+              <TextAlignCenterIcon />
             </el-button>
-            <el-button size="small" @click="editor.chain().focus().setTextAlign('right').run()" :disabled="!editor">
-              右对齐
+            <el-button
+              class="toolbar-btn"
+              size="default"
+              :class="{ active: editor?.isActive('textAlign', { align: 'right' }) }"
+              @click="editor && editor.chain().focus().setTextAlign('right').run()"
+            >
+              <TextAlignRightIcon />
             </el-button>
-          </div>
-          <el-button type="primary" size="small" @click="saveNote" style="margin-left: auto;">
-            保存
+
+
+        </div>
+          <el-button
+            circle
+            type="primary"
+            size="large"
+            @click="saveNote"
+            style="margin-left: auto;"
+          >
+            <SaveIcon size="24" />
           </el-button>
         </div>
       </div>
 
       <div class="editor-content">
-        <!-- ✅ 替换为Tiptap编辑器 -->
         <editor-content
           :editor="editor"
           style="border: 1px solid #ccc; border-radius: 6px; min-height: 400px; padding: 10px;"
@@ -90,22 +146,34 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted , onUnmounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 
-// ✅ 导入Tiptap相关组件和新扩展
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Bold from '@tiptap/extension-bold'
 import Italic from '@tiptap/extension-italic'
+import Underline from '@tiptap/extension-underline'
+import Strike from '@tiptap/extension-strike'
 import BulletList from '@tiptap/extension-bullet-list'
 import OrderedList from '@tiptap/extension-ordered-list'
 import ListItem from '@tiptap/extension-list-item'
-import Underline from '@tiptap/extension-underline'
-import Strike from '@tiptap/extension-strike'
 import TextAlign from '@tiptap/extension-text-align'
 
-import { fetchFragments, createFragment, updateFragment } from '@/api/fragment'
+import BoldIcon from '@/components/icons/BoldIcon.vue'
+import ItalicIcon from '@/components/icons/ItalicIcon.vue'
+import UnderlineIcon from '@/components/icons/UnderlineIcon.vue'
+import StrikeIcon from '@/components/icons/StrikeIcon.vue'
+import BulletListIcon from '@/components/icons/BulletListIcon.vue'
+import OrderedListIcon from '@/components/icons/OrderedListIcon.vue'
+import TextAlignLeftIcon from '@/components/icons/TextAlignLeftIcon.vue'
+import TextAlignCenterIcon from '@/components/icons/TextAlignCenterIcon.vue'
+import TextAlignRightIcon from '@/components/icons/TextAlignRightIcon.vue'
+import SaveIcon from '@/components/icons/SaveIcon.vue'
+import HiddenIcon from '@/components/icons/HiddenIcon.vue'
 
+
+
+import { fetchFragments, createFragment, updateFragment } from '@/api/fragment'
 
 const notes = ref([])
 const currentIndex = ref(0)
@@ -113,17 +181,11 @@ const editIndex = ref(null)
 const showOutline = ref(true)
 
 const titleInput = ref(null)
-
-// 新增：编辑器实例和内容绑定
 const editor = ref(null)
 const currentContent = ref('')
 
-// ✅ 创建Tiptap编辑器实例
 const createEditor = (content = '') => {
-  // 如果已有编辑器实例，先销毁
-  if (editor.value) {
-    editor.value.destroy()
-  }
+  if (editor.value) editor.value.destroy()
 
   editor.value = new Editor({
     content,
@@ -146,7 +208,6 @@ const createEditor = (content = '') => {
     }
   })
 }
-
 
 const fetchNotes = async () => {
   try {
@@ -173,17 +234,12 @@ const createNote = () => {
     description: '',
     sortOrder: 0,
     type: 'text',
-    filename: defaultTitle + '.txt'  // ✅ 加这一行
+    filename: defaultTitle + '.txt'
   })
 
   currentIndex.value = notes.value.length - 1
 }
 
-// 新增：编辑器实例和内容绑定
-
-
-
-// ✅ 修改切换笔记逻辑
 const selectNote = (index) => {
   currentIndex.value = index
   const note = notes.value[index] || { content: '' }
@@ -192,7 +248,6 @@ const selectNote = (index) => {
   })
 }
 
-// ✅ 修改组件挂载逻辑
 onMounted(() => {
   fetchNotes().then(() => {
     nextTick(() => {
@@ -202,15 +257,12 @@ onMounted(() => {
   })
 })
 
-// 新增：组件卸载时销毁编辑器（释放内存）
 onUnmounted(() => {
   if (editor.value) {
     editor.value.destroy()
   }
 })
 
-
-// 大纲栏双击编辑文件名
 const startEditTitle = (index) => {
   editIndex.value = index
   nextTick(() => {
@@ -255,7 +307,6 @@ const saveNote = async () => {
     alert('保存失败，请查看控制台')
   }
 }
-
 </script>
 
 <style scoped>
@@ -266,7 +317,6 @@ const saveNote = async () => {
   overflow: hidden;
 }
 
-/* 左侧大纲栏 */
 .outline-panel {
   width: 280px;
   background: #f9f9f9;
@@ -307,7 +357,6 @@ const saveNote = async () => {
   user-select: text;
 }
 
-/* 右侧编辑区域 */
 .editor-panel {
   flex: 1;
   display: flex;
@@ -329,10 +378,6 @@ const saveNote = async () => {
   margin-bottom: 10px;
 }
 
-.editor-toolbar {
-  /* 可以根据需求增加样式 */
-}
-
 .editor-controls {
   flex: 1;
   background: #f3f3f3;
@@ -344,18 +389,10 @@ const saveNote = async () => {
   font-size: 14px;
 }
 
-.editor-controls p {
-  margin: 0;
-  line-height: 32px;
-  flex-grow: 1;
-}
-
 .editor-controls button {
   float: right;
 }
 
-
-/* 移除原 textarea 样式，添加编辑器容器样式 */
 .editor-content {
   flex: 1;
   margin-top: 10px;
@@ -363,33 +400,59 @@ const saveNote = async () => {
   overflow: hidden;
 }
 
-/* ✅ 添加Tiptap工具栏样式 */
 .tiptap-toolbar {
   display: flex;
   gap: 5px;
-  flex-wrap: wrap;  /* 按钮过多时自动换行 */
+  flex-wrap: wrap;
   padding: 5px 0;
 }
 
-.editor-controls {
-  flex: 1;
-  background: #f3f3f3;
-  border-radius: 4px;
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
+.tiptap-toolbar .el-button {
+  border-radius: 50%;
 }
 
-/* ✅ 添加Tiptap编辑器内容样式 */
 .ProseMirror {
-  min-height: 100%;  /* 改为100%填充容器 */
+  min-height: 100%;
   height: 100%;
-  padding: 15px;     /* 增加内边距提升体验 */
+  padding: 15px;
   outline: none;
   background: white;
   overflow-y: auto;
 }
 
+.toolbar-btn {
+  border-radius: 6px !important;   /* 方形带圆角 */
+  border: 1px solid transparent;   /* 默认透明边框 */
+  background-color: transparent !important;
+  color: var(--el-text-color-primary);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.toolbar-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+}
+
+.toolbar-btn.active {
+  background-color: #409eff !important;  /* Element Plus 主蓝 */
+  color: white !important;
+  border-color: #409eff !important;
+}
+
+.toolbar-btn:hover {
+  border-color: #409eff !important;
+  color: #409eff !important;
+}
+
+.el-button--circle.toolbar-btn {
+  border-radius: 50% !important;
+}
 </style>

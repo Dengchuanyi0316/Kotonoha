@@ -27,6 +27,7 @@
     "@vueup/vue-quill": "^1.2.0",
     "axios": "^1.11.0",
     "element-plus": "^2.10.4",
+    "lucide-vue-next": "^0.536.0",
     "pinia": "^3.0.3",
     "quill": "^2.0.0",
     "tinymce": "^8.0.1",
