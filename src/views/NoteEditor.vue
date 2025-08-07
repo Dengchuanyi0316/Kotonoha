@@ -136,10 +136,12 @@
       </div>
 
       <div class="editor-content">
-        <editor-content
-          :editor="editor"
-          style="border: 1px solid #ccc; border-radius: 6px; min-height: 400px; padding: 10px;"
-        />
+        <div class="editor-scroll" @click="focusEditor">
+          <editor-content
+            :editor="editor"
+            class="editor-inner"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -202,7 +204,7 @@ const createEditor = (content = '') => {
         types: ['heading', 'paragraph']
       })
     ],
-    autofocus: true,
+    //autofocus: true,
     onUpdate: ({ editor }) => {
       currentContent.value = editor.getHTML()
     }
@@ -307,6 +309,11 @@ const saveNote = async () => {
     alert('保存失败，请查看控制台')
   }
 }
+const focusEditor = () => {
+  if (editor.value) {
+    editor.value.commands.focus()
+  }
+}
 </script>
 
 <style scoped>
@@ -398,6 +405,33 @@ const saveNote = async () => {
   margin-top: 10px;
   height: calc(100% - 100px);
   overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+  border: none;
+  border-radius: 8px;
+  padding: 1px;
+  background: transparent;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.2s ease;
+}
+
+.editor-scroll:focus-within {
+  box-shadow: 0 0 0 2px #409eff33;
+  border-color: #409eff;
+}
+
+.editor-inner {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  min-height: 550px;
+  padding: 10px;
+  background: white;
 }
 
 .tiptap-toolbar {
@@ -418,6 +452,8 @@ const saveNote = async () => {
   outline: none;
   background: white;
   overflow-y: auto;
+  cursor: text;
+  white-space: pre-wrap;
 }
 
 .toolbar-btn {
