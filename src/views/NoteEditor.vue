@@ -4,7 +4,7 @@
     <div class="outline-panel" v-show="showOutline">
       <div class="outline-header">
         <h3>笔记列表</h3>
-        <el-button type="primary" size="small" @click="createNote">新建</el-button>
+        <el-button type="primary" size="small" @click="initializeNewNote">新建</el-button>
       </div>
       <ul class="note-list">
         <li
@@ -12,20 +12,21 @@
           :key="note.id || index"
           @click="selectNote(index)"
           :class="{ active: currentIndex === index }"
+          @contextmenu.prevent="handleDeleteNote (index)"
         >
           <template v-if="editIndex === index">
             <el-input
-              v-model="notes[index].filename"
+              v-model="notes[index].title"
               size="small"
               @blur="finishEditTitle"
               @keyup.enter="finishEditTitle"
-              ref="titleInput"
+              :ref="(el) => titleInput[index] = el"
               autofocus
             />
           </template>
           <template v-else>
             <span @dblclick="startEditTitle(index)">
-              {{ note.filename || `未命名 ${index + 1}` }}
+              {{ note.title || `未命名 ${index + 1}` }}
             </span>
           </template>
         </li>
@@ -175,14 +176,14 @@ import HiddenIcon from '@/components/icons/HiddenIcon.vue'
 
 
 
-import { fetchFragments, createFragment, updateFragment } from '@/api/fragment'
+import { fetchNotes, createNote, updateNote, deleteNote } from '@/api/note'
 
 const notes = ref([])
-const currentIndex = ref(0)
+const currentIndex = ref(-1)
 const editIndex = ref(null)
 const showOutline = ref(true)
 
-const titleInput = ref(null)
+const titleInput = ref([])
 const editor = ref(null)
 const currentContent = ref('')
 
@@ -211,50 +212,66 @@ const createEditor = (content = '') => {
   })
 }
 
-const fetchNotes = async () => {
+const loadNotes = async () => {
   try {
-    const res = await fetchFragments()
+    const res = await fetchNotes()
     notes.value = res.data || []
-    currentIndex.value = 0
+    currentIndex.value = -1
   } catch (err) {
     console.error('获取笔记失败', err)
   }
 }
 
-const createNote = () => {
+const initializeNewNote = () => {
   const noteCount = notes.value.length + 1
-  const defaultTitle = `未命名笔记 ${noteCount}`
+  const defaultTitle = `未命名 ${noteCount}`
 
   notes.value.push({
     id: null,
     title: defaultTitle,
-    content: '',
-    filePath: "D:\\file-self\\txt",
-    fileType: "text/plain",
-    fileSize: 0,
-    noteId: null,
+    contentJson: '',
     description: '',
-    sortOrder: 0,
-    type: 'text',
-    filename: defaultTitle + '.txt'
   })
 
   currentIndex.value = notes.value.length - 1
+  selectNote(currentIndex.value)
+}
+
+const handleDeleteNote  = async (index) => {
+  const note = notes.value[index]
+  // 使用原生confirm对话框
+  if (!confirm(`确定删除【${note.title}】吗？`)) {
+    return // 用户取消删除
+  }
+
+  try {
+    if (note.id) {
+      await deleteNote(note.id)
+    }
+    notes.value.splice(index, 1)
+
+    if (currentIndex.value === index) {
+      currentIndex.value = -1
+      createEditor('')
+    }
+  } catch (e) {
+    console.error('删除失败', e)
+  }
 }
 
 const selectNote = (index) => {
   currentIndex.value = index
-  const note = notes.value[index] || { content: '' }
+  const note = notes.value[index] || { contentJson: '' }
   nextTick(() => {
-    createEditor(note.content || '')
+    createEditor(note.contentJson || '')
   })
 }
 
 onMounted(() => {
-  fetchNotes().then(() => {
+  loadNotes().then(() => {
     nextTick(() => {
-      const initialContent = notes.value[currentIndex.value]?.content || ''
-      createEditor(initialContent)
+      // const initialContent = notes.value[currentIndex.value]?.content || ''
+      // createEditor(initialContent)
     })
   })
 })
@@ -268,26 +285,13 @@ onUnmounted(() => {
 const startEditTitle = (index) => {
   editIndex.value = index
   nextTick(() => {
-    if (titleInput.value) titleInput.value.focus()
+    if (titleInput.value[index]) titleInput.value[index].focus()
   })
 }
 
 const finishEditTitle = async () => {
   if (editIndex.value === null) return
-  const note = notes.value[editIndex.value]
   editIndex.value = null
-  try {
-    if (note.id) {
-      await updateFragment(note.id, {
-        filename: note.filename,
-        description: note.description,
-        sortOrder: note.sortOrder,
-        type: note.type
-      })
-    }
-  } catch (e) {
-    console.error('更新文件名失败', e)
-  }
 }
 
 const toggleOutline = () => {
@@ -296,11 +300,19 @@ const toggleOutline = () => {
 
 const saveNote = async () => {
   const note = notes.value[currentIndex.value]
+  note.contentJson = currentContent.value
+  console.log("=======提交参数=========",note)
+  const submitData = {
+    title: note.title,
+    description: note.description,
+    contentJson: note.contentJson,
+    // 根据需要添加status、tags、coverImage等字段
+  }
   try {
     if (note.id) {
-      await updateFragment(note.id, note)
+      await updateNote(note.id, submitData)
     } else {
-      const res = await createFragment(note)
+      const res = await createNote(submitData)
       note.id = res.data.id
     }
     alert('保存成功')
