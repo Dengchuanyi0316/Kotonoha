@@ -41,13 +41,9 @@ onMounted(() => {
         position: 'bottom',
         fontSize: 14,// 调整文字大小
       },
-      // 根据连接数动态计算节点大小
-      symbolSize: function (node) {
-        const linksCount = graphData.links.filter(link =>
-          link.source === node.id || link.target === node.id
-        ).length;
-        return Math.min(40 + linksCount * 5, 60);
-      },
+      // 根据连接数动态计算节点大小,待实现
+      symbolSize: 40,
+
       // 根据节点类型设置颜色
       itemStyle: {
         color: function(params) {
