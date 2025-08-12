@@ -1,0 +1,154 @@
+{
+  "nodes": [
+    {
+      "id": "main",
+      "name": "main.js",
+      "type": "js",
+      "value": 20
+    },
+    {
+      "id": "App",
+      "name": "App.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "views\\Resources",
+      "name": "Resources.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "views\\NoteEditor",
+      "name": "NoteEditor.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "views\\NewHome",
+      "name": "NewHome.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "views\\HomeView",
+      "name": "HomeView.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "views\\AboutView",
+      "name": "AboutView.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "router\\index",
+      "name": "index.js",
+      "type": "js",
+      "value": 20
+    },
+    {
+      "id": "components\\WelcomeItem",
+      "name": "WelcomeItem.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\TheWelcome",
+      "name": "TheWelcome.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\NavBar",
+      "name": "NavBar.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\icons\\IconTooling",
+      "name": "IconTooling.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\icons\\IconSupport",
+      "name": "IconSupport.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\icons\\IconEcosystem",
+      "name": "IconEcosystem.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\icons\\IconDocumentation",
+      "name": "IconDocumentation.vue",
+      "type": "vue",
+      "value": 20
+    },
+    {
+      "id": "components\\icons\\IconCommunity",
+      "name": "IconCommunity.vue",
+      "type": "vue",
+      "value": 20
+    }
+  ],
+  "links": [
+    {
+      "source": "main",
+      "target": "App"
+    },
+    {
+      "source": "App",
+      "target": "components\\NavBar"
+    },
+    {
+      "source": "views\\HomeView",
+      "target": "components\\TheWelcome"
+    },
+    {
+      "source": "router\\index",
+      "target": "views\\NoteEditor"
+    },
+    {
+      "source": "router\\index",
+      "target": "views\\Resources"
+    },
+    {
+      "source": "router\\index",
+      "target": "views\\AboutView"
+    },
+    {
+      "source": "router\\index",
+      "target": "views\\NewHome"
+    },
+    {
+      "source": "components\\TheWelcome",
+      "target": "components\\WelcomeItem"
+    },
+    {
+      "source": "components\\TheWelcome",
+      "target": "components\\icons\\IconDocumentation"
+    },
+    {
+      "source": "components\\TheWelcome",
+      "target": "components\\icons\\IconTooling"
+    },
+    {
+      "source": "components\\TheWelcome",
+      "target": "components\\icons\\IconEcosystem"
+    },
+    {
+      "source": "components\\TheWelcome",
+      "target": "components\\icons\\IconCommunity"
+    },
+    {
+      "source": "components\\TheWelcome",
+      "target": "components\\icons\\IconSupport"
+    }
+  ]
+}
