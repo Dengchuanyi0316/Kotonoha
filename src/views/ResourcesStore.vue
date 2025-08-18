@@ -7,6 +7,9 @@
         <el-tab-pane label="游戏" name="game" class="category-tab"></el-tab-pane>
         <el-tab-pane label="工具" name="tool" class="category-tab"></el-tab-pane>
       </el-tabs>
+      <el-button type="primary" icon="Upload" @click="openUploadDialog" class="upload-btn">
+        上传资源
+      </el-button>
     </div>
 
     <!-- 主内容区 -->
@@ -124,6 +127,66 @@
         </div>
       </div>
     </div>
+
+
+    <!-- 上传页面 -->
+    <el-dialog v-model="uploadDialogVisible" title="上传资源" width="600px">
+      <el-form ref="uploadFormRef" :model="uploadForm" label-width="100px">
+        <el-form-item label="资源名称" prop="name" :rules="[{ required: true, message: '请输入资源名称', trigger: 'blur' }]">
+          <el-input v-model="uploadForm.name" placeholder="请输入资源名称"></el-input>
+        </el-form-item>
+        <el-form-item label="资源分类" prop="category">
+          <el-input
+            v-model="uploadForm.category"
+            readonly
+            class="category-input"
+            style="color: #333; background-color: #fff;"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="资源标签" prop="tags">
+          <el-select v-model="uploadForm.tags" multiple placeholder="请选择标签" style="width: 100%">
+            <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="资源文件" prop="files">
+          <el-upload
+            v-model:file-list="fileList"
+            class="upload-demo"
+            action="/api/upload/files"
+            multiple
+            :on-success="handleFileSuccess"
+          >
+            <el-button type="primary">点击上传文件</el-button>
+            <template #tip>
+              <div class="el-upload__tip">支持多文件上传</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="缩略图" prop="thumbnail">
+          <el-upload
+            v-model:file-list="thumbnailList"
+            class="upload-demo"
+            action="/api/upload/thumbnail"
+            :before-upload="beforeThumbnailUpload"
+            :on-success="handleThumbnailSuccess"
+          >
+            <el-button type="primary">点击上传缩略图</el-button>
+            <template #tip>
+              <div class="el-upload__tip">仅支持单文件上传</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="备注" prop="description">
+          <el-input v-model="uploadForm.description" type="textarea" :rows="4" placeholder="请输入资源备注"></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="uploadDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitUpload">确认上传</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -131,6 +194,7 @@
 import { ref, computed } from 'vue';
 import { ElCard, ElTabs, ElTabPane, ElCollapse, ElCollapseItem, ElCheckboxGroup, ElCheckbox, ElSelect, ElOption, ElButton, ElPagination } from 'element-plus';
 import 'element-plus/dist/index.css';
+import { getTagByCategory} from '@/api/tag.js'
 
 // 活跃标签页
 const activeTab = ref('animation');
@@ -199,6 +263,20 @@ const toolResources = ref([
   { id: 212, name: '时间跟踪工具', description: '项目时间跟踪和报告生成工具', category: '效率工具', date: '2023-11-04', imageUrl: 'https://picsum.photos/id/52/300/200', downloads: 2890 },
 ]);
 
+// 新增上传相关变量
+const uploadDialogVisible = ref(false);
+const uploadForm = ref({
+  name: '',
+  description: '',
+  category: '',
+  tags: [],
+  files: [],
+  thumbnail: ''
+});
+const tags = ref([]);
+const fileList = ref([]);
+const thumbnailList = ref([]);
+
 // 根据当前标签页获取资源总数
 const totalResources = computed(() => {
   switch(activeTab.value) {
@@ -258,6 +336,77 @@ const paginatedResources = computed(() => {
   const startIndex = (currentPage.value - 1) * pageSize.value;
   return filteredResources.value.slice(startIndex, startIndex + pageSize.value);
 });
+
+
+// 打开上传对话框
+const openUploadDialog = () => {
+  const categoryMap = {
+    animation: '动画',
+    game: '游戏',
+    tool: '工具'
+  };
+  // 使用汉字分类名称
+  uploadForm.value.category = categoryMap[activeTab.value];
+  // 添加延迟确保响应式更新完成
+  setTimeout(() => {
+    uploadDialogVisible.value = true;
+  }, 0);
+  console.log('上传表单分类值:', uploadForm.value.category);
+  // 使用汉字分类名称获取标签
+  fetchTagsByCategory(categoryMap[activeTab.value]);
+};
+
+// 根据分类获取标签
+const fetchTagsByCategory = async (category) => {
+  try {
+    // 使用封装的API函数，自动处理参数编码
+    const response = await getTagByCategory(category);
+    tags.value = response.data; // 根据实际API响应结构调整
+  } catch (error) {
+    console.error('获取标签失败:', error);
+  }
+};
+
+// 缩略图上传前校验
+const beforeThumbnailUpload = (file) => {
+  // 清空已选缩略图
+  thumbnailList.value = [];
+  return true;
+};
+
+// 文件上传成功处理
+const handleFileSuccess = (response, file, fileList) => {
+  uploadForm.value.files = fileList.map(file => file.response.data);
+};
+
+// 缩略图上传成功处理
+const handleThumbnailSuccess = (response) => {
+  uploadForm.value.thumbnail = response.data;
+};
+
+// 提交上传表单
+const submitUpload = async () => {
+  try {
+    // 实际项目中替换为真实API
+    await fetch('/api/resources', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(uploadForm.value)
+    });
+    uploadDialogVisible.value = false;
+    // 重置表单
+    fileList.value = [];
+    thumbnailList.value = [];
+    uploadForm.value.tags = [];
+    // 刷新资源列表
+    // ... existing code to refresh resources ...
+  } catch (error) {
+    console.error('上传失败:', error);
+  }
+};
+
+
+
 </script>
 
 <style scoped>
@@ -432,5 +581,39 @@ const paginatedResources = computed(() => {
   display: flex;
   justify-content: center;
   margin-top: 40px;
+}
+
+/* 上传按钮样式 */
+.category-nav {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between; /* 新增：两端对齐 */
+  align-items: center; /* 新增：垂直居中对齐 */
+}
+
+.category-tabs {
+  --el-tabs-nav-background-color: transparent;
+}
+
+.category-tab {
+  padding: 8px 20px;
+  margin-right: 15px;
+  border-radius: 20px;
+  background-color: #f0f2f5;
+  font-size: 16px;
+}
+
+.upload-btn {
+  padding: 8px 20px;
+  border-radius: 20px;
+}
+
+/* 上传对话框样式 */
+.el-dialog .el-form-item {
+  margin-bottom: 20px;
+}
+
+.el-upload {
+  margin-top: 10px;
 }
 </style>
