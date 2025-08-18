@@ -49,17 +49,14 @@ export function deleteResource(id) {
   return request.delete(`/resources/${id}`);
 }
 
-// 获取动画资源
-export function getAnimationResources() {
-  return request.get('/resources/animation');
-}
-
-// 获取游戏资源
-export function getGameResources() {
-  return request.get('/resources/game');
-}
-
-// 获取工具资源
-export function getToolResources() {
-  return request.get('/resources/tool');
+/**
+ * 根据分类查询资源
+ * @param {string} category - 资源分类
+ * @returns {Promise<Array>} 资源列表
+ */
+export function getResourcesByCategory(category) {
+  return request({
+    url: `/resources/category/${category}`,
+    method: 'get'
+  });
 }

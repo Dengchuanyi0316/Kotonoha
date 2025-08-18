@@ -7,6 +7,17 @@
         <el-tab-pane label="游戏" name="game" class="category-tab"></el-tab-pane>
         <el-tab-pane label="工具" name="tool" class="category-tab"></el-tab-pane>
       </el-tabs>
+
+      <!-- 新增测试接口区域 -->
+      <div class="test-api-container" style="display: flex; align-items: center; gap: 10px;">
+        <el-input
+          v-model="testCategory"
+          placeholder="输入分类名称"
+          style="width: 180px;"
+        ></el-input>
+        <el-button type="success" @click="handleTestApi">测试</el-button>
+      </div>
+
       <el-button type="primary" icon="Upload" @click="openUploadDialog" class="upload-btn">
         上传资源
       </el-button>
@@ -144,8 +155,15 @@
           ></el-input>
         </el-form-item>
         <el-form-item label="资源标签" prop="tags">
-          <el-select v-model="uploadForm.tags" multiple placeholder="请选择标签" style="width: 100%">
-            <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id"></el-option>
+          <el-select
+            v-model="uploadForm.tags"
+            multiple
+            placeholder="请选择标签"
+            style="width: 100%"
+            value-key="id"
+          collapse-tags
+          >
+          <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="资源文件" prop="files">
@@ -190,7 +208,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed , watch } from 'vue';
 import {
   ElCard,
   ElTabs,
@@ -208,6 +226,7 @@ import {
 import 'element-plus/dist/index.css';
 import { getTagByCategory} from '@/api/tag.js'
 import { uploadResourceFile , uploadThumbnail , addResource} from '@/api/resource';
+import { getResourcesByCategory } from '@/api/resource';
 
 
 // 活跃标签页
@@ -290,6 +309,20 @@ const uploadForm = ref({
 const tags = ref([]);
 const fileList = ref([]);
 const thumbnailList = ref([]);
+
+// 获取标签列表（根据当前分类）
+const loadTags = async () => {
+  try {
+    const response = await getTagByCategory(activeTab.value);
+    tags.value = response.data || [];
+  } catch (error) {
+    console.error('加载标签失败:', error);
+    ElMessage.error('加载标签失败');
+  }
+};
+
+// 监听分类切换时重新加载标签
+watch(activeTab, loadTags, { immediate: true });
 
 // 根据当前标签页获取资源总数
 const totalResources = computed(() => {
@@ -409,7 +442,11 @@ const submitUpload = async () => {
         filePath: filePath.value,
         thumbnailPath: thumbnailPath.value,
         description: uploadForm.value.description,
-        tags: uploadForm.value.tags || [] // 确保tags是数组类型
+        tags: uploadForm.value.tags.map(tag => ({
+          id: tag.id,
+          name: tag.name
+          // 添加后端Tag类需要的其他属性
+        }))
       };
 
       console.log('提交给后端的完整参数:', resourceData);
@@ -500,6 +537,27 @@ const uploadUploadThumbnail = async (file) => {
     // 关闭加载状态
     loading.close();
   }
+};
+
+// 测试接口相关变量
+const testCategory = ref('');
+
+// 测试接口调用方法
+const handleTestApi = () => {
+  if (!testCategory.value.trim()) {
+    ElMessage.warning('请输入分类名称');
+    return;
+  }
+
+  getResourcesByCategory(testCategory.value)
+    .then(response => {
+      console.log('接口测试结果:', response.data);
+      ElMessage.success(`成功获取 ${testCategory.value} 分类资源，共 ${response.data.length} 条数据`);
+    })
+    .catch(error => {
+      console.error('接口测试失败:', error);
+      ElMessage.error('接口调用失败，请查看控制台日志');
+    });
 };
 </script>
 
