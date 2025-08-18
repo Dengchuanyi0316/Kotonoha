@@ -152,9 +152,9 @@
           <el-upload
             v-model:file-list="fileList"
             class="upload-demo"
-            action="/api/upload/files"
             multiple
-            :on-success="handleFileSuccess"
+            :auto-upload="false"
+            @change="handleUploadFile"
           >
             <el-button type="primary">点击上传文件</el-button>
             <template #tip>
@@ -166,9 +166,8 @@
           <el-upload
             v-model:file-list="thumbnailList"
             class="upload-demo"
-            action="/api/upload/thumbnail"
-            :before-upload="beforeThumbnailUpload"
-            :on-success="handleThumbnailSuccess"
+            :auto-upload="false"
+            @change="uploadUploadThumbnail"
           >
             <el-button type="primary">点击上传缩略图</el-button>
             <template #tip>
@@ -192,9 +191,24 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { ElCard, ElTabs, ElTabPane, ElCollapse, ElCollapseItem, ElCheckboxGroup, ElCheckbox, ElSelect, ElOption, ElButton, ElPagination } from 'element-plus';
+import {
+  ElCard,
+  ElTabs,
+  ElTabPane,
+  ElCollapse,
+  ElCollapseItem,
+  ElCheckboxGroup,
+  ElCheckbox,
+  ElSelect,
+  ElOption,
+  ElButton,
+  ElPagination,
+  ElMessage, ElLoading
+} from 'element-plus'
 import 'element-plus/dist/index.css';
 import { getTagByCategory} from '@/api/tag.js'
+import { uploadResourceFile , uploadThumbnail , addResource} from '@/api/resource';
+
 
 // 活跃标签页
 const activeTab = ref('animation');
@@ -337,6 +351,10 @@ const paginatedResources = computed(() => {
   return filteredResources.value.slice(startIndex, startIndex + pageSize.value);
 });
 
+// 上传文件夹时间戳
+const uploadFolderTimestamp = ref('');
+const filePath = ref(''); // 存储返回的文件夹路径
+const thumbnailPath = ref('');
 
 // 打开上传对话框
 const openUploadDialog = () => {
@@ -347,6 +365,8 @@ const openUploadDialog = () => {
   };
   // 使用汉字分类名称
   uploadForm.value.category = categoryMap[activeTab.value];
+  // 保存时间戳用于上传接口
+  uploadFolderTimestamp.value = Date.now().toString();
   // 添加延迟确保响应式更新完成
   setTimeout(() => {
     uploadDialogVisible.value = true;
@@ -367,46 +387,120 @@ const fetchTagsByCategory = async (category) => {
   }
 };
 
-// 缩略图上传前校验
-const beforeThumbnailUpload = (file) => {
-  // 清空已选缩略图
-  thumbnailList.value = [];
-  return true;
-};
 
-// 文件上传成功处理
-const handleFileSuccess = (response, file, fileList) => {
-  uploadForm.value.files = fileList.map(file => file.response.data);
-};
-
-// 缩略图上传成功处理
-const handleThumbnailSuccess = (response) => {
-  uploadForm.value.thumbnail = response.data;
-};
 
 // 提交上传表单
 const submitUpload = async () => {
+    try {
+      // 验证文件和缩略图是否已上传
+      if (!filePath.value) {
+        ElMessage.error('请先上传资源文件');
+        return;
+      }
+      if (!thumbnailPath.value) {
+        ElMessage.error('请先上传缩略图');
+        return;
+      }
+
+      // 构造符合后端要求的资源对象
+      const resourceData = {
+        name: uploadForm.value.name,
+        category: uploadForm.value.category,
+        filePath: filePath.value,
+        thumbnailPath: thumbnailPath.value,
+        description: uploadForm.value.description,
+        tags: uploadForm.value.tags || [] // 确保tags是数组类型
+      };
+
+      console.log('提交给后端的完整参数:', resourceData);
+
+
+      // 调用addResource接口
+      await addResource(resourceData);
+
+      // 提交成功处理
+      ElMessage.success('资源上传成功');
+      uploadDialogVisible.value = false;
+
+      // 重置表单和状态
+      fileList.value = [];
+      thumbnailList.value = [];
+      uploadForm.value = {
+        name: '',
+        category: '',
+        description: '',
+        tags: []
+      };
+      filePath.value = '';
+      thumbnailPath.value = '';
+
+      // 刷新资源列表（根据实际项目实现）
+      // fetchResources();
+
+    } catch (error) {
+      console.error('资源提交失败:', error);
+      ElMessage.error(error.response?.data?.message || '资源提交失败，请重试');
+    }
+  };
+
+const handleUploadFile = async (file) => {
+  // 显示加载状态
+  const loading = ElLoading.service({
+    text: '文件上传中...',
+    lock: true
+  });
+
   try {
-    // 实际项目中替换为真实API
-    await fetch('/api/resources', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(uploadForm.value)
-    });
-    uploadDialogVisible.value = false;
-    // 重置表单
-    fileList.value = [];
-    thumbnailList.value = [];
-    uploadForm.value.tags = [];
-    // 刷新资源列表
-    // ... existing code to refresh resources ...
+    // 调用上传接口，使用之前生成的时间戳作为folder参数
+    const response = await uploadResourceFile(file.raw, uploadFolderTimestamp.value);
+
+    // 存储返回的文件夹路径
+    filePath.value = response.data.folderPath;
+    console.log('上传文件路径:', filePath.value);
+
+    // 显示成功消息
+    ElMessage.success('文件上传成功');
+    return true;
   } catch (error) {
-    console.error('上传失败:', error);
+    // 错误处理
+    console.error('文件上传失败:', error);
+    ElMessage.error(error.response?.data?.message || '文件上传失败，请重试');
+    return false;
+  } finally {
+    // 关闭加载状态
+    loading.close();
   }
 };
 
+const uploadUploadThumbnail = async (file) => {
+  // 显示加载状态
+  const loading = ElLoading.service({
+    text: '缩略图上传中...',
+    lock: true
+  });
 
+  try {
+    // 调用缩略图上传接口，使用相同的时间戳参数
+    const response = await uploadThumbnail(file.raw, uploadFolderTimestamp.value);
 
+    // 存储返回的文件夹路径（与文件上传共用同一路径）
+    thumbnailPath.value = response.data.folderPath;
+    console.log('上传缩略图路径:', thumbnailPath.value);
+    // 显示成功消息
+    ElMessage.success('缩略图上传成功');
+    // 将缩略图URL存储到表单中（如果需要预览）
+    uploadForm.value.thumbnail = URL.createObjectURL(file.raw);
+    return true;
+  } catch (error) {
+    // 错误处理
+    console.error('缩略图上传失败:', error);
+    ElMessage.error(error.response?.data?.message || '缩略图上传失败，请重试');
+    return false;
+  } finally {
+    // 关闭加载状态
+    loading.close();
+  }
+};
 </script>
 
 <style scoped>
