@@ -108,19 +108,43 @@
 
         <!-- 资源列表 -->
         <div class="resource-list">
-          <el-card v-for="item in paginatedResources" :key="item.id" class="resource-card">
-            <div class="resource-item">
-              <img :src="item.imageUrl" alt="{{ item.name }}" class="resource-image">
-              <div class="resource-info">
-                <h3>{{ item.name }}</h3>
-                <p class="resource-description">{{ item.description }}</p>
-                <div class="resource-meta">
-                  <span class="resource-type">{{ item.category }}</span>
-                  <span class="resource-date">{{ item.date }}</span>
-                </div>
-              </div>
+          <!-- 加载状态 -->
+          <el-skeleton v-if="loading" :count="6" class="resource-skeleton" />
+
+          <!-- 错误提示 -->
+          <div v-else-if="errorMsg" class="error-message">{{ errorMsg }}</div>
+
+          <!-- 资源列表 -->
+          <div v-else class="resource-grid">
+            <!-- 动画资源 -->
+            <div v-if="activeTab === 'animation'">
+              <resource-card
+                v-for="item in animationResources"
+                :key="item.id"
+                :resource="item"
+              />
             </div>
-          </el-card>
+            <!-- 游戏资源 -->
+            <div v-if="activeTab === 'game'">
+              <resource-card
+                v-for="item in gameResources"
+                :key="item.id"
+                :resource="item"
+              />
+            </div>
+            <!-- 工具资源 -->
+            <div v-if="activeTab === 'tool'">
+              <resource-card
+                v-for="item in toolResources"
+                :key="item.id"
+                :resource="item"
+              />
+            </div>
+            <!-- 空状态 -->
+            <div v-if="totalResources === 0" class="empty-state">
+              <el-empty description="暂无资源数据"></el-empty>
+            </div>
+          </div>
         </div>
 
         <!-- 分页控件 -->
@@ -208,9 +232,8 @@
 </template>
 
 <script setup>
-import { ref, computed , watch } from 'vue';
+import { ref, computed , watch , onMounted } from 'vue';
 import {
-  ElCard,
   ElTabs,
   ElTabPane,
   ElCollapse,
@@ -227,7 +250,12 @@ import 'element-plus/dist/index.css';
 import { getTagByCategory} from '@/api/tag.js'
 import { uploadResourceFile , uploadThumbnail , addResource} from '@/api/resource';
 import { getResourcesByCategory } from '@/api/resource';
+import ResourceCard from '@/components/ResourceCard.vue';
 
+// 组件挂载时获取资源数据
+onMounted(() => {
+  fetchResources();
+});
 
 // 活跃标签页
 const activeTab = ref('animation');
@@ -248,53 +276,14 @@ const selectedPlatforms = ref([]);
 const selectedToolTypes = ref([]);
 const selectedSupportPlatforms = ref([]);
 
-// 动画资源数据（增加更多示例数据）
-const animationResources = ref([
-  { id: 1, name: '2D角色行走动画', description: '高质量2D角色行走循环动画，包含8个方向', category: '2D动画', date: '2023-11-15', imageUrl: 'https://picsum.photos/id/11/300/200', downloads: 1240 },
-  { id: 2, name: '3D场景过渡动画', description: '3D游戏场景切换特效动画，带alpha通道', category: '3D动画', date: '2023-11-14', imageUrl: 'https://picsum.photos/id/22/300/200', downloads: 876 },
-  { id: 3, name: '像素风格爆炸动画', description: '8位像素风格爆炸特效，逐帧动画', category: '逐帧动画', date: '2023-11-13', imageUrl: 'https://picsum.photos/id/33/300/200', downloads: 2153 },
-  { id: 4, name: '骨骼动画基础模板', description: '人物骨骼动画基础模板，含绑定权重', category: '骨骼动画', date: '2023-11-12', imageUrl: 'https://picsum.photos/id/44/300/200', downloads: 1567 },
-  { id: 5, name: '火焰特效动画', description: '逼真的2D火焰特效循环动画', category: '2D动画', date: '2023-11-11', imageUrl: 'https://picsum.photos/id/55/300/200', downloads: 982 },
-  { id: 6, name: '角色攻击动画', description: '3D角色攻击动作序列，含多种攻击方式', category: '3D动画', date: '2023-11-10', imageUrl: 'https://picsum.photos/id/66/300/200', downloads: 1845 },
-  { id: 7, name: 'UI按钮反馈动画', description: '游戏UI按钮点击反馈动画集合', category: '逐帧动画', date: '2023-11-09', imageUrl: 'https://picsum.photos/id/77/300/200', downloads: 3210 },
-  { id: 8, name: '动物骨骼动画', description: '四足动物骨骼动画模板，含行走奔跑循环', category: '骨骼动画', date: '2023-11-08', imageUrl: 'https://picsum.photos/id/88/300/200', downloads: 765 },
-  { id: 9, name: '水波纹特效', description: '2D水波纹扩散动画效果，可循环播放', category: '2D动画', date: '2023-11-07', imageUrl: 'https://picsum.photos/id/99/300/200', downloads: 1123 },
-  { id: 10, name: '3D摄像机路径动画', description: '预设的3D摄像机运动路径动画', category: '3D动画', date: '2023-11-06', imageUrl: 'https://picsum.photos/id/101/300/200', downloads: 954 },
-  { id: 11, name: '粒子爆炸效果', description: '2D粒子系统爆炸动画，含多种参数', category: '逐帧动画', date: '2023-11-05', imageUrl: 'https://picsum.photos/id/102/300/200', downloads: 1789 },
-  { id: 12, name: '角色表情动画', description: '人物面部表情骨骼动画集合', category: '骨骼动画', date: '2023-11-04', imageUrl: 'https://picsum.photos/id/103/300/200', downloads: 2345 },
-]);
+// 替换静态资源数据为动态获取
+const animationResources = ref([]);
+const gameResources = ref([]);
+const toolResources = ref([]);
 
-// 游戏资源数据（增加更多示例数据）
-const gameResources = ref([
-  { id: 101, name: 'RPG角色创建系统', description: '完整的RPG游戏角色创建系统模板', category: '角色扮演', date: '2023-11-15', imageUrl: 'https://picsum.photos/id/21/300/200', downloads: 3240 },
-  { id: 102, name: '回合制战斗系统', description: '策略回合制战斗系统，含AI逻辑', category: '策略游戏', date: '2023-11-14', imageUrl: 'https://picsum.photos/id/22/300/200', downloads: 2876 },
-  { id: 103, name: '开放世界地图模板', description: '大型开放世界游戏地图基础模板', category: '角色扮演', date: '2023-11-13', imageUrl: 'https://picsum.photos/id/23/300/200', downloads: 4123 },
-  { id: 104, name: '塔防游戏关卡编辑器', description: '塔防类游戏关卡设计工具', category: '策略游戏', date: '2023-11-12', imageUrl: 'https://picsum.photos/id/24/300/200', downloads: 1876 },
-  { id: 105, name: '动作游戏角色控制器', description: '第三人称动作游戏角色控制器', category: '动作游戏', date: '2023-11-11', imageUrl: 'https://picsum.photos/id/25/300/200', downloads: 3541 },
-  { id: 106, name: '赛车游戏物理引擎', description: '赛车游戏专用物理引擎配置', category: '动作游戏', date: '2023-11-10', imageUrl: 'https://picsum.photos/id/26/300/200', downloads: 2109 },
-  { id: 107, name: '模拟城市建设系统', description: '城市模拟建设游戏核心系统', category: '模拟经营', date: '2023-11-09', imageUrl: 'https://picsum.photos/id/27/300/200', downloads: 2789 },
-  { id: 108, name: '农场模拟种植系统', description: '农场模拟游戏作物种植生长系统', category: '模拟经营', date: '2023-11-08', imageUrl: 'https://picsum.photos/id/28/300/200', downloads: 1956 },
-  { id: 109, name: 'MMORPG任务系统', description: '大型多人在线角色扮演游戏任务系统', category: '角色扮演', date: '2023-11-07', imageUrl: 'https://picsum.photos/id/29/300/200', downloads: 4321 },
-  { id: 110, name: '战棋游戏网格系统', description: '战棋类游戏网格地图和移动系统', category: '策略游戏', date: '2023-11-06', imageUrl: 'https://picsum.photos/id/30/300/200', downloads: 1765 },
-  { id: 111, name: '平台跳跃游戏关卡包', description: '2D平台跳跃游戏关卡设计模板', category: '动作游戏', date: '2023-11-05', imageUrl: 'https://picsum.photos/id/31/300/200', downloads: 2345 },
-  { id: 112, name: '餐厅模拟经营系统', description: '餐厅模拟经营游戏核心玩法系统', category: '模拟经营', date: '2023-11-04', imageUrl: 'https://picsum.photos/id/32/300/200', downloads: 1890 },
-]);
-
-// 工具资源数据（增加更多示例数据）
-const toolResources = ref([
-  { id: 201, name: 'UI设计组件库', description: '包含200+UI组件的设计资源包', category: '设计工具', date: '2023-11-15', imageUrl: 'https://picsum.photos/id/41/300/200', downloads: 5240 },
-  { id: 202, name: '代码自动生成器', description: '根据模板自动生成前端代码的工具', category: '开发工具', date: '2023-11-14', imageUrl: 'https://picsum.photos/id/42/300/200', downloads: 3876 },
-  { id: 203, name: '文档管理系统', description: '轻量级Markdown文档管理工具', category: '办公工具', date: '2023-11-13', imageUrl: 'https://picsum.photos/id/43/300/200', downloads: 2123 },
-  { id: 204, name: '图片压缩工具', description: '批量图片压缩和格式转换工具', category: '效率工具', date: '2023-11-12', imageUrl: 'https://picsum.photos/id/44/300/200', downloads: 4876 },
-  { id: 205, name: 'API测试工具', description: 'RESTful API测试和文档生成工具', category: '开发工具', date: '2023-11-11', imageUrl: 'https://picsum.photos/id/45/300/200', downloads: 3541 },
-  { id: 206, name: '图标生成器', description: '自定义图标生成工具，支持多格式导出', category: '设计工具', date: '2023-11-10', imageUrl: 'https://picsum.photos/id/46/300/200', downloads: 2109 },
-  { id: 207, name: '项目管理模板', description: '敏捷开发项目管理表格模板', category: '办公工具', date: '2023-11-09', imageUrl: 'https://picsum.photos/id/47/300/200', downloads: 1789 },
-  { id: 208, name: '批量重命名工具', description: '文件批量重命名和整理工具', category: '效率工具', date: '2023-11-08', imageUrl: 'https://picsum.photos/id/48/300/200', downloads: 2956 },
-  { id: 209, name: '色彩方案生成器', description: 'UI设计色彩方案和调色板生成工具', category: '设计工具', date: '2023-11-07', imageUrl: 'https://picsum.photos/id/49/300/200', downloads: 3321 },
-  { id: 210, name: '数据库管理工具', description: '轻量级数据库可视化管理工具', category: '开发工具', date: '2023-11-06', imageUrl: 'https://picsum.photos/id/50/300/200', downloads: 2765 },
-  { id: 211, name: '会议记录模板', description: '结构化会议记录和待办事项模板', category: '办公工具', date: '2023-11-05', imageUrl: 'https://picsum.photos/id/51/300/200', downloads: 1345 },
-  { id: 212, name: '时间跟踪工具', description: '项目时间跟踪和报告生成工具', category: '效率工具', date: '2023-11-04', imageUrl: 'https://picsum.photos/id/52/300/200', downloads: 2890 },
-]);
+// 添加加载状态和错误处理
+const loading = ref(false);
+const errorMsg = ref('');
 
 // 新增上传相关变量
 const uploadDialogVisible = ref(false);
@@ -420,7 +409,47 @@ const fetchTagsByCategory = async (category) => {
   }
 };
 
+const categoryMap = {
+  animation: '动画',
+  game: '游戏',
+  tool: '工具'
+};
 
+// 新增：获取资源数据
+const fetchResources = async () => {
+  const category = categoryMap[activeTab.value];
+  if (!category) return;
+
+  loading.value = true;
+  errorMsg.value = '';
+  try {
+    const response = await getResourcesByCategory(category);
+    // 根据当前标签页更新对应资源数组
+    switch(activeTab.value) {
+      case 'animation':
+        animationResources.value = response.data;
+        break;
+      case 'game':
+        gameResources.value = response.data;
+        break;
+      case 'tool':
+        toolResources.value = response.data;
+        break;
+    }
+  } catch (error) {
+    console.error('获取资源失败:', error);
+    errorMsg.value = '获取资源失败，请刷新页面重试';
+    ElMessage.error(errorMsg.value);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 监听分类切换时重新加载标签和资源
+watch(activeTab, () => {
+  loadTags();
+  fetchResources();
+}, { immediate: true });
 
 // 提交上传表单
 const submitUpload = async () => {
