@@ -116,30 +116,12 @@
 
           <!-- 资源列表 -->
           <div v-else class="resource-grid">
-            <!-- 动画资源 -->
-            <div v-if="activeTab === 'animation'">
-              <resource-card
-                v-for="item in animationResources"
-                :key="item.id"
-                :resource="item"
-              />
-            </div>
-            <!-- 游戏资源 -->
-            <div v-if="activeTab === 'game'">
-              <resource-card
-                v-for="item in gameResources"
-                :key="item.id"
-                :resource="item"
-              />
-            </div>
-            <!-- 工具资源 -->
-            <div v-if="activeTab === 'tool'">
-              <resource-card
-                v-for="item in toolResources"
-                :key="item.id"
-                :resource="item"
-              />
-            </div>
+            <!-- 移除分类容器嵌套 -->
+            <resource-card
+              v-for="item in paginatedResources"
+              :key="item.id"
+              :resource="item"
+            />
             <!-- 空状态 -->
             <div v-if="totalResources === 0" class="empty-state">
               <el-empty description="暂无资源数据"></el-empty>
@@ -796,5 +778,37 @@ const handleTestApi = () => {
 
 .el-upload {
   margin-top: 10px;
+}
+
+.resource-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+  gap:16px;
+  padding:16px;
+  grid-auto-rows: 280px;
+}
+.card-wrap{ width:100%; }
+
+
+:deep(.resource-card) {
+  width: 100%;
+  height: 100%;
+}
+
+/* 多断点响应式布局 */
+@media (max-width: 768px) {
+  .resource-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+@media (min-width: 769px) and (max-width: 1240px) {
+  .resource-grid {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  }
+}
+@media (min-width: 1241px) {
+  .resource-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
 }
 </style>
