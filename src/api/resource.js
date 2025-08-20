@@ -60,3 +60,20 @@ export function getResourcesByCategory(category) {
     method: 'get'
   });
 }
+/**
+ * 获取资源文件信息（数量和大小）
+ * @param {number} resourceId - 资源ID
+ * @returns {Promise<Object>} 文件信息对象
+ */
+export function getFileInfo(resourceId) {
+  return request.get(`/resources/${resourceId}/file-info`);
+}
+
+/**
+ * 获取资源压缩包下载URL
+ * @param {number} resourceId - 资源ID
+ * @returns {string} 下载URL
+ */
+export function getDownloadZipUrl(resourceId) {
+  return request.defaults.baseURL + `/resources/${resourceId}/download-zip`;
+}
