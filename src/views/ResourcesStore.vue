@@ -110,7 +110,6 @@
         <div class="resource-list">
           <!-- 加载状态 -->
           <el-skeleton v-if="loading" :count="6" class="resource-skeleton" />
-
           <!-- 错误提示 -->
           <div v-else-if="errorMsg" class="error-message">{{ errorMsg }}</div>
 
@@ -680,13 +679,6 @@ const handleTestApi = () => {
   width: 160px;
 }
 
-/* 资源列表样式 */
-.resource-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
-}
 
 .resource-card {
   border-radius: 12px;
@@ -782,8 +774,8 @@ const handleTestApi = () => {
 
 .resource-grid {
   display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
-  gap:16px;
+  grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+  gap:20px;
   padding:16px;
   grid-auto-rows: 280px;
 }
@@ -795,20 +787,10 @@ const handleTestApi = () => {
   height: 100%;
 }
 
-/* 多断点响应式布局 */
+/* 小屏优化 */
 @media (max-width: 768px) {
   .resource-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  }
-}
-@media (min-width: 769px) and (max-width: 1240px) {
-  .resource-grid {
-    grid-template-columns: repeat(2, minmax(200px, 1fr));
-  }
-}
-@media (min-width: 1241px) {
-  .resource-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 }
 </style>
