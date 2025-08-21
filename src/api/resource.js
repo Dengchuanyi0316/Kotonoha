@@ -92,3 +92,18 @@ export function getResourcePreview(resourceId) {
     }
   });
 }
+
+/**
+ * 根据标签ID数组查询资源
+ * @param {Array<number>} tagIds - 标签ID数组
+ * @returns {Promise<Array>} 资源列表
+ */
+export function getResourcesByTagIds(tagIds) {
+  return request({
+    url: '/resources/by-tag-ids',
+    method: 'get',
+    params: {
+      tagIds: tagIds.join(',') // 将数组转换为逗号分隔的字符串
+    }
+  });
+}

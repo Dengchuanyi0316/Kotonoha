@@ -39,18 +39,7 @@
         <el-collapse v-model="activeFilters" v-if="activeTab === 'animation'">
           <el-collapse-item title="动画类型" name="animationType">
             <el-checkbox-group v-model="selectedAnimationTypes">
-              <el-checkbox label="2D动画" name="2d"></el-checkbox>
-              <el-checkbox label="3D动画" name="3d"></el-checkbox>
-              <el-checkbox label="逐帧动画" name="frame"></el-checkbox>
-              <el-checkbox label="骨骼动画" name="bone"></el-checkbox>
-            </el-checkbox-group>
-          </el-collapse-item>
-          <el-collapse-item title="文件格式" name="fileFormat">
-            <el-checkbox-group v-model="selectedFileFormats">
-              <el-checkbox label="MP4" name="mp4"></el-checkbox>
-              <el-checkbox label="GIF" name="gif"></el-checkbox>
-              <el-checkbox label="WebM" name="webm"></el-checkbox>
-              <el-checkbox label="AVI" name="avi"></el-checkbox>
+              <el-checkbox v-for="tag in animationTags" :key="tag.id" :label="tag.name" :value="tag.id"></el-checkbox>
             </el-checkbox-group>
           </el-collapse-item>
         </el-collapse>
@@ -59,17 +48,7 @@
         <el-collapse v-model="activeFilters" v-if="activeTab === 'game'">
           <el-collapse-item title="游戏类型" name="gameType">
             <el-checkbox-group v-model="selectedGameTypes">
-              <el-checkbox label="角色扮演" name="rpg"></el-checkbox>
-              <el-checkbox label="策略游戏" name="strategy"></el-checkbox>
-              <el-checkbox label="动作游戏" name="action"></el-checkbox>
-              <el-checkbox label="模拟经营" name="simulation"></el-checkbox>
-            </el-checkbox-group>
-          </el-collapse-item>
-          <el-collapse-item title="平台" name="platform">
-            <el-checkbox-group v-model="selectedPlatforms">
-              <el-checkbox label="PC" name="pc"></el-checkbox>
-              <el-checkbox label="移动端" name="mobile"></el-checkbox>
-              <el-checkbox label="主机" name="console"></el-checkbox>
+              <el-checkbox v-for="tag in gameTags" :key="tag.id" :label="tag.name" :value="tag.id"></el-checkbox>
             </el-checkbox-group>
           </el-collapse-item>
         </el-collapse>
@@ -78,18 +57,7 @@
         <el-collapse v-model="activeFilters" v-if="activeTab === 'tool'">
           <el-collapse-item title="工具类型" name="toolType">
             <el-checkbox-group v-model="selectedToolTypes">
-              <el-checkbox label="开发工具" name="dev"></el-checkbox>
-              <el-checkbox label="设计工具" name="design"></el-checkbox>
-              <el-checkbox label="办公工具" name="office"></el-checkbox>
-              <el-checkbox label="效率工具" name="efficiency"></el-checkbox>
-            </el-checkbox-group>
-          </el-collapse-item>
-          <el-collapse-item title="支持平台" name="supportPlatform">
-            <el-checkbox-group v-model="selectedSupportPlatforms">
-              <el-checkbox label="Windows" name="windows"></el-checkbox>
-              <el-checkbox label="macOS" name="mac"></el-checkbox>
-              <el-checkbox label="Linux" name="linux"></el-checkbox>
-              <el-checkbox label="跨平台" name="cross"></el-checkbox>
+              <el-checkbox v-for="tag in toolTags" :key="tag.id" :label="tag.name" :value="tag.id"></el-checkbox>
             </el-checkbox-group>
           </el-collapse-item>
         </el-collapse>
@@ -229,13 +197,19 @@ import {
 } from 'element-plus'
 import 'element-plus/dist/index.css';
 import { getTagByCategory} from '@/api/tag.js'
-import { uploadResourceFile , uploadThumbnail , addResource} from '@/api/resource';
+import {
+  uploadResourceFile,
+  uploadThumbnail,
+  addResource,
+  getResourcesByTagIds
+} from '@/api/resource'
 import { getResourcesByCategory } from '@/api/resource';
 import ResourceCard from '@/components/ResourceCard.vue';
 
 // 组件挂载时获取资源数据
 onMounted(() => {
   fetchResources();
+  loadCategoryTags();
 });
 
 // 活跃标签页
@@ -280,6 +254,34 @@ const tags = ref([]);
 const fileList = ref([]);
 const thumbnailList = ref([]);
 
+// 添加标签数据存储变量
+const animationTags = ref([]);
+const gameTags = ref([]);
+const toolTags = ref([]);
+
+// 修改标签加载逻辑
+const loadCategoryTags = async () => {
+  const categoryName = categoryMap[activeTab.value];
+  try {
+    const response = await getTagByCategory(categoryName);
+    // 根据当前分类存储标签数据
+    switch(activeTab.value) {
+      case 'animation':
+        animationTags.value = response.data;
+        break;
+      case 'game':
+        gameTags.value = response.data;
+        break;
+      case 'tool':
+        toolTags.value = response.data;
+        break;
+    }
+  } catch (error) {
+    console.error('加载标签失败:', error);
+    ElMessage.error('加载标签失败');
+  }
+};
+
 // 获取标签列表（根据当前分类）
 const loadTags = async () => {
   try {
@@ -304,21 +306,66 @@ const totalResources = computed(() => {
   }
 });
 
-// 应用筛选条件
-const applyFilter = () => {
-  // 筛选逻辑实现
+// 修改筛选应用逻辑
+const applyFilter = async () => {
+  let selectedTagIds = [];
+  // 根据当前分类获取选中的标签ID
+  switch(activeTab.value) {
+    case 'animation':
+      selectedTagIds = selectedAnimationTypes.value;
+      break;
+    case 'game':
+      selectedTagIds = selectedGameTypes.value;
+      break;
+    case 'tool':
+      selectedTagIds = selectedToolTypes.value;
+      break;
+  }
+
+  loading.value = true;
+  try {
+    let response;
+    if (selectedTagIds.length > 0) {
+      // 调用新的按标签ID筛选接口
+      response = await getResourcesByTagIds(selectedTagIds);
+    } else {
+      // 如果没有选择标签，获取该分类下所有资源
+      response = await getResourcesByCategory(categoryMap[activeTab.value]);
+    }
+
+    // 更新资源数据
+    switch(activeTab.value) {
+      case 'animation':
+        animationResources.value = response.data;
+        break;
+      case 'game':
+        gameResources.value = response.data;
+        break;
+      case 'tool':
+        toolResources.value = response.data;
+        break;
+    }
+  } catch (error) {
+    console.error('筛选资源失败:', error);
+    ElMessage.error('筛选资源失败，请重试');
+  } finally {
+    loading.value = false;
+  }
   currentPage.value = 1; // 筛选后重置到第一页
 };
 
-// 重置筛选条件
+// 修改重置筛选逻辑
 const resetFilter = () => {
+  // 重置所有选中状态
   selectedAnimationTypes.value = [];
   selectedFileFormats.value = [];
   selectedGameTypes.value = [];
   selectedPlatforms.value = [];
   selectedToolTypes.value = [];
   selectedSupportPlatforms.value = [];
-  currentPage.value = 1; // 重置后回到第一页
+  currentPage.value = 1;
+  // 重置后加载该分类所有资源
+  fetchResources();
 };
 
 // 根据当前标签页和分页条件获取资源
@@ -428,7 +475,7 @@ const fetchResources = async () => {
 
 // 监听分类切换时重新加载标签和资源
 watch(activeTab, () => {
-  loadTags();
+  loadCategoryTags();
   fetchResources();
 }, { immediate: true });
 
