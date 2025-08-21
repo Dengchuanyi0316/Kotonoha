@@ -31,7 +31,7 @@
 <script setup>
 
 import { ElButton, ElTag, ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { getFileInfo, getDownloadZipUrl } from '@/api/resource';
+import { getFileInfo, getDownloadZipUrl, getResourcePreview } from '@/api/resource'
 
 const props = defineProps({
   resource: {
@@ -99,7 +99,6 @@ const handleDownload = async () => {
       }
     ).then(() => {
       // 确认下载逻辑
-      console.log("hhhhhhhhhhhhhhhhhhhhhhhhhhhhh",getDownloadZipUrl(props.resource.id))
       window.open(getDownloadZipUrl(props.resource.id), '_blank');
     }).catch(() => {
       // 用户取消操作，不显示错误
@@ -111,10 +110,50 @@ const handleDownload = async () => {
   }
 };
 
-const handlePreview = () => {
-  // 实现预览逻辑
-  ElMessage.info(`Previewing ${props.resource.name}`);
-  // 实际项目中应该打开预览对话框或新页面
+const handlePreview = async () => {
+  try {
+    // 显示加载状态
+    const loading = ElLoading.service({
+      text: '正在加载预览...',
+      lock: true
+    });
+
+    // 调用预览接口获取HTML内容（注意添加.data）
+    const response = await getResourcePreview(props.resource.id);
+    const htmlContent = response.data; // 从响应对象中提取data属性
+    // console.log('预览HTML内容:', htmlContent);
+    loading.close();
+
+    // 创建新窗口并写入HTML内容
+    const previewWindow = window.open('', '_blank');
+    if (!previewWindow) {
+      ElMessage.error('无法打开新窗口，请检查浏览器弹窗设置');
+      return;
+    }
+
+    // 写入基础HTML结构和预览内容
+    previewWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="zh-CN">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${props.resource.name} - 预览</title>
+        <style>
+          body { margin: 0; padding: 20px; background-color: #fff; }
+          .preview-container { max-width: 1200px; margin: 0 auto; }
+        </style>
+      </head>
+      <body>
+        <div class="preview-container">${htmlContent}</div>
+      </body>
+      </html>
+    `);
+    previewWindow.document.close();
+
+  } catch (error) {
+    ElMessage.error(`预览失败: ${error?.message || '未知错误'}`);
+  }
 };
 
 // 添加文件大小格式化函数

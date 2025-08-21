@@ -77,3 +77,18 @@ export function getFileInfo(resourceId) {
 export function getDownloadZipUrl(resourceId) {
   return request.defaults.baseURL + `/resources/${resourceId}/download-zip`;
 }
+
+/**
+ * 获取资源文件预览HTML
+ * @param {number} resourceId - 资源ID
+ * @returns {Promise<string>} 预览HTML内容
+ */
+export function getResourcePreview(resourceId) {
+  return request({
+    url: `/resources/${resourceId}/preview`,
+    method: 'get',
+    headers: {
+      'Accept': 'text/html'
+    }
+  });
+}
