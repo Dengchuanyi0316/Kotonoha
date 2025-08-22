@@ -1,105 +1,139 @@
 <template>
-  <div class="fixed bottom-0 left-0 right-0 bg-gray-900 text-white flex items-center px-4 py-2 shadow-lg">
-    <!-- 封面 -->
-    <img :src="currentSong.cover" alt="cover" class="w-12 h-12 rounded mr-3" />
-
-    <!-- 歌曲信息 -->
-    <div class="flex-1">
-      <p class="font-semibold">{{ currentSong.title }}</p>
-      <p class="text-sm text-gray-400">{{ currentSong.artist }}</p>
-      <!-- 播放进度条 -->
-      <input
-        type="range"
-        min="0"
-        :max="duration"
-        step="0.1"
-        v-model="currentTime"
-        class="w-full"
-        @input="seek"
-      />
+  <div
+    class="music-player"
+    :class="{ expanded: isExpanded || isLocked }"
+    @mouseenter="expand"
+    @mouseleave="collapse"
+  >
+    <!-- 播放条主体 -->
+    <div class="player-content">
+      <div class="song-info">
+        <span class="song-title">歌曲标题</span> - <span class="song-artist">歌手</span>
+      </div>
+      <div class="controls">
+        <button class="play-btn">▶</button>
+        <button class="prev-btn">⏮</button>
+        <button class="next-btn">⏭</button>
+        <button class="lock-btn" @click.stop="toggleLock">
+          {{ isLocked ? "🔒" : "🔓" }}
+        </button>
+      </div>
+      <div class="progress-bar">
+        <div class="progress"></div>
+      </div>
     </div>
-
-    <!-- 控制按钮 -->
-    <div class="flex items-center space-x-4 ml-4">
-      <button @click="prevSong">⏮️</button>
-      <button @click="togglePlay">{{ isPlaying ? "⏸️" : "▶️" }}</button>
-      <button @click="nextSong">⏭️</button>
+    <!-- 露出小条部分 -->
+    <div class="mini-bar" v-if="!isExpanded && !isLocked">
+      <span>🎵</span>
     </div>
-
-    <!-- 隐藏的 audio 标签 -->
-    <audio ref="audio" @timeupdate="updateTime" @ended="nextSong"></audio>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref } from 'vue'
 
-const audio = ref(null);
-const isPlaying = ref(false);
-const currentTime = ref(0);
-const duration = ref(0);
+const isExpanded = ref(false)
+const isLocked = ref(false)
 
-const playlist = reactive([
-  {
-    title: "Song A",
-    artist: "Artist 1",
-    url: "园游会.mp3",
-    cover: "logo.png"
-  },
-  {
-    title: "Song B",
-    artist: "Artist 2",
-    url: "园游会.mp3",
-    cover: "logo.png"
-  }
-]);
-
-const currentIndex = ref(0);
-const currentSong = reactive(playlist[currentIndex.value]);
-
-// 切换歌曲
-function loadSong(index) {
-  if (index < 0) index = playlist.length - 1;
-  if (index >= playlist.length) index = 0;
-  currentIndex.value = index;
-  Object.assign(currentSong, playlist[index]);
-  audio.value.src = currentSong.url;
-  audio.value.load();
-  //play();
+const expand = () => {
+  isExpanded.value = true
 }
 
-function play() {
-  audio.value.play();
-  isPlaying.value = true;
+const collapse = () => {
+  if (!isLocked.value) isExpanded.value = false
 }
 
-function pause() {
-  audio.value.pause();
-  isPlaying.value = false;
+const toggleLock = () => {
+  isLocked.value = !isLocked.value
+  if (isLocked.value) isExpanded.value = true
 }
-
-function togglePlay() {
-  isPlaying.value ? pause() : play();
-}
-
-function prevSong() {
-  loadSong(currentIndex.value - 1);
-}
-
-function nextSong() {
-  loadSong(currentIndex.value + 1);
-}
-
-function updateTime() {
-  currentTime.value = audio.value.currentTime;
-  duration.value = audio.value.duration || 0;
-}
-
-function seek() {
-  audio.value.currentTime = currentTime.value;
-}
-
-onMounted(() => {
-  loadSong(currentIndex.value);
-});
 </script>
+
+<style scoped>
+.music-player {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  max-width: 90%;
+  transition: all 0.3s ease;
+  font-family: "Microsoft YaHei", sans-serif;
+  z-index: 999;
+  cursor: pointer;
+}
+
+/* 初始只露出小条 */
+.music-player .mini-bar {
+  background: #1f1f1f;
+  color: #fff;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px 8px 0 0;
+}
+
+/* 展开后的播放条 */
+.music-player .player-content {
+  background: #282828;
+  color: #fff;
+  border-radius: 8px 8px 0 0;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 初始状态隐藏内容，只显示mini-bar */
+.music-player:not(.expanded) .player-content {
+  display: none;
+}
+
+/* 歌曲信息 */
+.song-info {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 控制按钮 */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* 锁定按钮特殊样式 */
+.lock-btn {
+  margin-left: auto;
+  font-size: 16px;
+}
+
+/* 进度条 */
+.progress-bar {
+  height: 5px;
+  background: #444;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar .progress {
+  height: 100%;
+  width: 30%; /* 临时展示比例 */
+  background: #1db954;
+  transition: width 0.3s;
+}
+
+/* 鼠标悬浮/锁定效果 */
+.music-player.expanded {
+  bottom: 0;
+}
+</style>
