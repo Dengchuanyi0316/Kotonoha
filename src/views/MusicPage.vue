@@ -55,18 +55,25 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref ,onMounted} from 'vue'
 import MusicPlayer from '@/components/MusicPlayer.vue'
+import { getAllMusic } from '@/api/music'
 
 const activeMenu = ref('all')
 
 // 模拟数据展示
-const musicList = ref([
-  { id: 1, title: '过火', artist: '张信哲', album: '宽容' },
-  { id: 2, title: '若月亮没来', artist: '多人', album: '月光集' },
-  { id: 3, title: '示例歌曲', artist: '歌手A', album: '示例专辑' },
-  { id: 4, title: '示例歌曲2', artist: '歌手B', album: '示例专辑2' },
-])
+const musicList = ref([])
+
+// 在组件挂载时调用API获取所有音乐
+onMounted(async () => {
+  try {
+    const response = await getAllMusic()
+    musicList.value = response.data || []
+  } catch (error) {
+    console.error('获取音乐列表失败:', error)
+    musicList.value = []
+  }
+})
 </script>
 
 <style scoped>
