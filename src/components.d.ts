@@ -39,6 +39,7 @@ declare module 'vue' {
     IconSupport: typeof import('./components/icons/IconSupport.vue')['default']
     IconTooling: typeof import('./components/icons/IconTooling.vue')['default']
     ItalicIcon: typeof import('./components/icons/ItalicIcon.vue')['default']
+    MusicPlayer: typeof import('./components/MusicPlayer.vue')['default']
     NavBar: typeof import('./components/NavBar.vue')['default']
     OrderedListIcon: typeof import('./components/icons/OrderedListIcon.vue')['default']
     ResourceCard: typeof import('./components/ResourceCard.vue')['default']

@@ -10,7 +10,7 @@
         <RouterLink to="/" exact-active-class="active">首页</RouterLink>
         <RouterLink to="/editor" exact-active-class="active">编辑</RouterLink>
         <RouterLink to="/resources" exact-active-class="active">资源</RouterLink>
-        <RouterLink to="/about" exact-active-class="active">关于</RouterLink>
+        <RouterLink to="/music" exact-active-class="active">音乐</RouterLink>
       </nav>
     </div>
   </header>

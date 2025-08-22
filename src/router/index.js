@@ -3,7 +3,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Editor from '../views/NoteEditor.vue'
 import Resources from '../views/ResourcesStore.vue'
-import About from '../views/AboutView.vue'
+import MusicCloud from '../views/MusicCloud.vue'
 import NewHome from '../views/NewHome.vue'
 
 const routes = [
@@ -14,7 +14,7 @@ const routes = [
   },
   { path: '/editor', component: Editor },
   { path: '/resources', component: Resources },
-  { path: '/about', component: About },
+  { path: '/music', component: MusicCloud },
 ]
 
 const router = createRouter({
