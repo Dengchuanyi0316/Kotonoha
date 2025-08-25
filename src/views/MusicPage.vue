@@ -34,7 +34,7 @@
       <div class="music-card" v-for="music in musicList" :key="music.id">
         <div class="cover">
           <img :src="'/default-thumbnail.png' || 'https://via.placeholder.com/80'" alt="{{ music.title }}封面"/>
-          <div class="play-button">▶</div>
+          <div class="play-button" @click="handlePlayClick(music)">▶</div>
         </div>
         <div class="info">
           <div class="title">{{ music.title }}</div>
@@ -50,7 +50,7 @@
     </main>
 
     <!-- 播放条 -->
-    <MusicPlayer />
+    <MusicPlayer :current-song="currentPlayingSong" />
   </div>
 </template>
 
@@ -63,6 +63,13 @@ const activeMenu = ref('all')
 
 // 模拟数据展示
 const musicList = ref([])
+const currentPlayingSong = ref(null)
+
+// 播放按钮点击事件处理函数
+const handlePlayClick = (music) => {
+  console.log('当前歌曲数据明细:', music);
+  currentPlayingSong.value = music;
+}
 
 // 在组件挂载时调用API获取所有音乐
 onMounted(async () => {

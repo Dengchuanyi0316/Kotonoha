@@ -13,8 +13,8 @@
       "value": 20
     },
     {
-      "id": "views\\Resources",
-      "name": "Resources.vue",
+      "id": "views\\ResourcesStore",
+      "name": "ResourcesStore.vue",
       "type": "vue",
       "value": 20
     },
@@ -31,14 +31,14 @@
       "value": 20
     },
     {
-      "id": "views\\HomeView",
-      "name": "HomeView.vue",
+      "id": "views\\MusicPage",
+      "name": "MusicPage.vue",
       "type": "vue",
       "value": 20
     },
     {
-      "id": "views\\AboutView",
-      "name": "AboutView.vue",
+      "id": "views\\HomeView",
+      "name": "HomeView.vue",
       "type": "vue",
       "value": 20
     },
@@ -116,11 +116,11 @@
     },
     {
       "source": "router\\index",
-      "target": "views\\Resources"
+      "target": "views\\ResourcesStore"
     },
     {
       "source": "router\\index",
-      "target": "views\\AboutView"
+      "target": "views\\MusicPage"
     },
     {
       "source": "router\\index",
