@@ -80,26 +80,25 @@
 
     </main>
 
-    <!-- 播放条 -->
-    <MusicPlayer :current-song="currentPlayingSong" />
+    <!-- 移除这里的MusicPlayer组件，因为它现在在App.vue中全局显示 -->
   </div>
 </template>
 
 <script setup>
-import { ref ,onMounted,watch} from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { addMusicToCollection, getAllCollections } from '@/api/music'
-import MusicPlayer from '@/components/MusicPlayer.vue'
 import { getAllMusic } from '@/api/music'
+import { useMusicPlayerStore } from '@/stores/musicPlayer'
+
+const playerStore = useMusicPlayerStore()
 
 const activeMenu = ref('all')
 const musicList = ref([])
-const currentPlayingSong = ref(null)
 
 // 新增状态
 const isFavoritesExpanded = ref(false)
 const playlists = ref([])
 const selectedPlaylistId = ref(null)
-
 
 const collectionMenus = ref({});
 
@@ -133,7 +132,7 @@ const selectPlaylist = (playlist) => {
 // 播放按钮点击事件处理函数
 const handlePlayClick = (music) => {
   console.log('当前歌曲数据明细:', music);
-  currentPlayingSong.value = music;
+  playerStore.loadSong(music)
 }
 
 // 在组件挂载时调用API获取所有音乐
@@ -295,8 +294,17 @@ const addToCollection = async (collectionId, musicId) => {
   position: relative;
   padding-bottom: 5px;
 }
-.menu-item { display: flex; justify-content: space-between; align-items: center; }
-.arrow { font-size: 12px; margin-left: 8px; }
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.arrow {
+  font-size: 12px;
+  margin-left: 8px;
+}
 
 /* 子菜单样式 */
 .sub-menu {
@@ -319,12 +327,13 @@ const addToCollection = async (collectionId, musicId) => {
   color: #1a73e8;
   font-weight: 500;
 }
+
 /* 关键修复：让带子菜单的父项纵向排布 */
 .menu-list > li.parent-menu {
-  display: flex;            /* 覆盖掉通用 li 的 display:flex 行为 */
-  flex-direction: column;   /* 纵向堆叠 .menu-item 和 .sub-menu */
+  display: flex; /* 覆盖掉通用 li 的 display:flex 行为 */
+  flex-direction: column; /* 纵向堆叠 .menu-item 和 .sub-menu */
   align-items: stretch;
-  padding: 0;               /* 内边距交给 .menu-item 控制 */
+  padding: 0; /* 内边距交给 .menu-item 控制 */
 }
 
 /* 父项标题行仍然左右排布（图标-文字-箭头） */
@@ -338,9 +347,9 @@ const addToCollection = async (collectionId, musicId) => {
 /* 子菜单占满宽度，改为自己纵向列表 */
 .menu-list > li.parent-menu .sub-menu {
   width: 100%;
-  padding-left: 0;          /* 不需要让整个 ul 缩进 */
+  padding-left: 0; /* 不需要让整个 ul 缩进 */
   margin: 0;
-  background: transparent;  /* 看你要不要背景 */
+  background: transparent; /* 看你要不要背景 */
   box-shadow: none;
 }
 
@@ -350,19 +359,27 @@ const addToCollection = async (collectionId, musicId) => {
 }
 
 /* 只高亮父项标题，不把整块 li（连同子菜单）都染色 */
-.menu-list li.active { background: transparent; color: inherit; }
+.menu-list li.active {
+  background: transparent;
+  color: inherit;
+}
+
 .menu-list li.active > .menu-item {
   background: #e8f4fd;
   color: #1a73e8;
   position: relative;
 }
+
 .menu-list li.active > .menu-item::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
   width: 4px;
   background: #1a73e8;
 }
+
 /* 右侧歌曲列表 - 长条形竖向排列 */
 .music-list {
   flex: 1;
@@ -396,13 +413,13 @@ const addToCollection = async (collectionId, musicId) => {
   align-items: center;
   padding: 12px 20px;
   margin-bottom: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
 
 .music-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .cover {
@@ -424,7 +441,7 @@ const addToCollection = async (collectionId, musicId) => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
   width: 40px;
   height: 40px;
@@ -508,7 +525,7 @@ const addToCollection = async (collectionId, musicId) => {
   right: 0; /* 右对齐按钮 */
   background: white;
   border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 10px 0;
   z-index: 100;
   min-width: 150px; /* 固定最小宽度 */
@@ -532,7 +549,7 @@ const addToCollection = async (collectionId, musicId) => {
   width: 200px;
   background: white;
   border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   padding: 10px 0;
 }
 

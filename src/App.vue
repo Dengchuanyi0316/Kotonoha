@@ -5,10 +5,12 @@
 <!--    <RouterView />-->
 <!--  </main>-->
   <RouterView />
+  <MusicPlayer />
 </template>
 
 <script setup>
 import NavBar from './components/NavBar.vue'
+import MusicPlayer from './components/MusicPlayer.vue'
 </script>
 
 <style>
@@ -40,12 +42,14 @@ html, body , #app{
   background-color: #34495e; /* 或你 NavBar 的背景色 */
 }
 
-/* 给 main 留出顶部空间，避免被 NavBar 遮挡 */
+/* 给 main 留出顶部空间，避免被 NavBar 和 MusicPlayer遮挡 */
 .page-container {
   margin-top: 60px; /* 这个高度根据你 NavBar 实际高度调整 */
+  margin-bottom: 100px; /* 添加底部边距，避免被播放条遮挡 */
   padding: 2rem;
   flex: 1; /* 剩余空间全部占满 */
   overflow-y: auto; /* 内容溢出时滚动 */
   width: 100%;
+  box-sizing: border-box; /* 确保padding不会增加元素宽度 */
 }
 </style>
