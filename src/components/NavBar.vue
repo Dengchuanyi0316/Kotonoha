@@ -1,4 +1,3 @@
-<!-- src/components/NavBar.vue -->
 <template>
   <header class="navbar">
     <div class="nav-inner">
@@ -7,10 +6,8 @@
         <span>MySite</span>
       </div>
       <nav class="nav-menu">
-        <RouterLink to="/" exact-active-class="active">首页</RouterLink>
-        <RouterLink to="/editor" exact-active-class="active">编辑</RouterLink>
-        <RouterLink to="/resources" exact-active-class="active">资源</RouterLink>
-        <RouterLink to="/music" exact-active-class="active">音乐</RouterLink>
+        <!-- 保留顶部导航或根据需要调整 -->
+        <!-- 可以选择只保留一些快捷操作或搜索功能 -->
       </nav>
     </div>
   </header>
@@ -29,6 +26,7 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   width: 100%; /* 确保撑满宽度 */
 }
+
 /* 移除可能干扰的样式 */
 .navbar {
   position: sticky !important;
@@ -37,7 +35,6 @@
 }
 
 .nav-inner {
-  //max-width: 95%;
   margin: 0 auto;
   padding: 0.8rem 1.5rem;
   display: flex;

@@ -5,6 +5,7 @@ import Editor from '../views/NoteEditor.vue'
 import Resources from '../views/ResourcesStore.vue'
 import MusicCloud from '../views/MusicPage.vue'
 import NewHome from '../views/NewHome.vue'
+import TestPage from '../views/TestPage.vue'
 
 const routes = [
   {
@@ -15,6 +16,7 @@ const routes = [
   { path: '/editor', component: Editor },
   { path: '/resources', component: Resources },
   { path: '/music', component: MusicCloud },
+  { path: '/test', component: TestPage },
 ]
 
 const router = createRouter({
