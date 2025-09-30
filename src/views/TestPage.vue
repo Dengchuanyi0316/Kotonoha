@@ -16,7 +16,11 @@
       >
         <el-button type="primary">选择文件</el-button>
         <template #tip>
-          <div class="el-upload__tip">支持多文件上传</div>
+          <div class="el-upload__tip">
+            支持多文件上传
+            <br>
+            <span style="color: #f56c6c;">提示：大于100MB的文件将使用分片上传</span>
+          </div>
         </template>
       </el-upload>
 
@@ -37,7 +41,13 @@
 
       <!-- 上传进度显示 -->
       <div v-if="uploading" class="upload-progress-section">
-        <p>{{ currentUploadFileName }} 上传进度：</p>
+        <!-- 新增：区分显示普通上传和分片上传进度 -->
+        <p v-if="selectedFiles.find(f => f.name === currentUploadFileName)?.isLargeFile">
+          {{ currentUploadFileName }} 分片上传进度：
+        </p>
+        <p v-else>
+          {{ currentUploadFileName }} 上传进度：
+        </p>
         <el-progress :percentage="uploadProgress" :status="uploadStatus"></el-progress>
       </div>
     </div>
@@ -51,7 +61,14 @@
 
 <script setup>
 import { ref, computed ,nextTick} from 'vue'
-import { createTempFileAndGetSign, submitFileForm } from '@/api/cos.js'
+import {
+  createTempFileAndGetSign,
+  createMultipartUploadSign,
+  submitFileForm,
+  signPart,
+  completeMultipartUpload,
+  abortMultipartUpload
+} from '@/api/cos.js'
 
 // 组件引用
 const upload = ref(null)
@@ -72,14 +89,28 @@ const hasAllSignatures = computed(() => {
   console.log('检查签名状态 - selectedFiles长度:', selectedFiles.value.length)
   console.log('selectedFiles内容:', selectedFiles.value)
 
-  // 确保selectedFiles有内容，并且每个文件都有有效的signature对象和必要的字段
+  // 修复：根据文件类型区分签名验证条件
   return selectedFiles.value.length > 0 &&
-    selectedFiles.value.every(file =>
-      file.signature &&
-      file.signature.key &&
-      file.signature.signature &&
-      file.cosUrl
-    )
+    selectedFiles.value.every(file => {
+      // 必须有signature对象和key
+      if (!file.signature || !file.signature.key) {
+        return false
+      }
+
+      // 必须有cosUrl
+      if (!file.cosUrl) {
+        return false
+      }
+
+      // 区分文件类型检查不同字段
+      if (file.isLargeFile) {
+        // 大文件(分片上传)需要uploadId
+        return !!file.signature.uploadId
+      } else {
+        // 小文件(普通上传)需要signature
+        return !!file.signature.signature
+      }
+    })
 })
 
 // 处理文件选择变化
@@ -107,13 +138,27 @@ const handleFileChange = async (file, files) => {
 
     // 循环处理每个新文件
     for (const file of newFiles) {
-      console.log(`正在处理文件: ${file.name}`)
+      console.log(`正在处理文件: ${file.name}, 大小: ${file.size}`)
 
-      // 调用后端API获取上传签名
-      const signatureResponse = await createTempFileAndGetSign({
-        fileName: file.name,
-        fileSize: file.size
-      })
+      // 判断文件大小是否超过100MB (100 * 1024 * 1024 = 104857600 bytes)
+      const isLargeFile = file.size > 104857600
+      let signatureResponse, signatureData
+
+      // 新增：根据文件大小选择不同的签名API
+      if (isLargeFile) {
+        console.log(`文件${file.name}超过100MB，使用分片上传模式`)
+        // 调用分片上传签名API
+        signatureResponse = await createMultipartUploadSign({
+          fileName: file.name,
+          fileSize: file.size
+        })
+      } else {
+        // 普通文件签名API
+        signatureResponse = await createTempFileAndGetSign({
+          fileName: file.name,
+          fileSize: file.size
+        })
+      }
 
       // 验证签名响应数据
       if (!signatureResponse || signatureResponse.data.code !== 200 || !signatureResponse.data) {
@@ -122,22 +167,39 @@ const handleFileChange = async (file, files) => {
       }
 
       // 从嵌套的data对象中提取签名信息
-      const signatureData = signatureResponse.data.data
-      if (!signatureData || !signatureData.signature || !signatureData.key) {
-        console.error('获取签名失败，签名数据不完整:', signatureData)
-        throw new Error('获取签名失败: 签名数据不完整')
+      signatureData = signatureResponse.data.data
+      // 修复：根据上传类型区分验证条件（分片上传不需要signature字段，需要uploadId）
+      if (isLargeFile) {
+        // 分片上传签名验证：需要key和uploadId
+        if (!signatureData || !signatureData.key || !signatureData.uploadId) {
+          console.error('获取分片签名失败，签名数据不完整:', signatureData)
+          throw new Error('获取分片签名失败: 缺少key或uploadId')
+        }
+      } else {
+        // 普通上传签名验证：需要key和signature
+        if (!signatureData || !signatureData.signature || !signatureData.key) {
+          console.error('获取签名失败，签名数据不完整:', signatureData)
+          throw new Error('获取签名失败: 签名数据不完整')
+        }
       }
 
-      // 构建文件对象并添加到数组 - 重点修改：将签名数据存储为signature对象
+      // 构建文件对象并添加到数组
       updatedFiles.push({
         ...file,
+        isLargeFile,
+        chunkSize: isLargeFile ? 5 * 1024 * 1024 : 0,
+        totalChunks: isLargeFile ? Math.ceil(file.size / (5 * 1024 * 1024)) : 0,
+        uploadedChunks: isLargeFile ? [] : null,
         signature: {
           key: signatureData.key,
-          signature: signatureData.signature,
+          // 修复：分片上传不需要存储signature字段
+          signature: !isLargeFile ? signatureData.signature : '',
+          uploadId: signatureData.uploadId || '',
           token: signatureData.token || ''
         },
-        signatureUrl: signatureData.signature, // 完整的签名URL（用于PUT请求）
-        fileId: signatureData.fileId || null, // 处理fileId可能缺失的情况
+        // 修复：分片上传不需要signatureUrl（后续分片签名通过signPart接口获取）
+        signatureUrl: !isLargeFile ? signatureData.signature : '',
+        fileId: signatureData.fileId || null,
         cosUrl: signatureData.cosUrl || ''
       })
 
@@ -215,15 +277,20 @@ const startUpload = async () => {
       uploadStatus.value = 'success'
 
       console.log(`开始上传文件: ${uploadFile.name}`)
-      // 上传文件到COS
-      await uploadFileToCOS(uploadFile)
+      // 新增：根据文件大小选择不同的上传方法
+      if (uploadFile.isLargeFile) {
+        await uploadLargeFileToCOS(uploadFile) //分片上传
+      } else {
+        await uploadFileToCOS(uploadFile) //普通上传
+      }
 
       console.log(`文件${uploadFile.name}上传到COS成功，开始提交表单`)
       // 上传完成后，提交表单数据将临时文件转为正式文件
       await submitFileForm({
         fileName: uploadFile.name,
         description: '',
-        fileIds: [uploadFile.fileId]
+        fileIds: uploadFile.isLargeFile ? [] : [uploadFile.fileId] // 分片上传传空数组
+
       })
 
       showMessage(`${uploadFile.name} 上传成功`, 'success')
@@ -233,10 +300,7 @@ const startUpload = async () => {
     // 修改：上传完成后不清空文件列表，而是保留以便继续上传
     showMessage('所有文件上传完成，可以继续选择文件上传', 'success')
     console.log('所有文件上传完成，保留文件列表以便继续上传')
-    // selectedFiles.value = []
-    // if (upload.value) {
-    //   upload.value.clearFiles()
-    // }
+
   } catch (error) {
     uploadStatus.value = 'exception'
     showMessage(`上传失败：${error.message}`, 'error')
@@ -317,6 +381,162 @@ const uploadFileToCOS = (uploadFile) => {
     console.log('开始发送PUT上传请求...')
     xhr.send(uploadFile.raw)
   })
+}
+
+// 新：分片上传实现（前端负责分片+并发上传，每片调用后端获取单片签名URL）
+const uploadLargeFileToCOS = async (uploadFile) => {
+  console.log(`准备分片上传大文件到COS: ${uploadFile.name}`)
+
+  // 原始 File 对象（与直传保持一致）
+  const fileObj = uploadFile.raw
+  if (!fileObj) throw new Error('找不到要上传的文件对象 (uploadFile.raw)')
+
+  // 分片配置（你在 selectedFiles 中设置的 chunkSize / totalChunks 会优先使用）
+  const chunkSize = uploadFile.chunkSize || 5 * 1024 * 1024 // 5MB
+  const totalChunks = uploadFile.totalChunks || Math.ceil(fileObj.size / chunkSize)
+  const key = uploadFile.signature?.key
+  const uploadId = uploadFile.signature?.uploadId
+
+  if (!key) throw new Error('文件存储 key 不存在，请重新获取签名')
+  if (!uploadId) throw new Error('uploadId 不存在，请重新获取分片上传签名')
+
+  // 并发数（可根据需要调整）
+  const CONCURRENCY = 3
+  const MAX_RETRY = 3
+
+  let uploadedBytes = 0
+  uploadProgress.value = 0
+
+  // helper：按 partNumber 获取对应 Blob
+  const getChunkBlob = (partNumber) => {
+    const start = (partNumber - 1) * chunkSize
+    const end = Math.min(fileObj.size, start + chunkSize)
+    return fileObj.slice(start, end)
+  }
+
+  // helper：上传单片（含重试逻辑）
+  const uploadPartWithRetry = async (partNumber) => {
+    let attempt = 0
+    let lastErr = null
+    const blob = getChunkBlob(partNumber)
+
+    while (attempt < MAX_RETRY) {
+      attempt++
+      try {
+        // 1) 请求后端生成该分片的预签名URL
+        const signResp = await signPart({
+          key,
+          uploadId,
+          partNumber
+        })
+        const signData = signResp?.data?.data || signResp?.data || signResp
+        // 兼容性：后端返回字段名可能为 url / signedUrl / signature / signatureUrl
+        const signedUrl = signData?.url || signData?.signedUrl || signData?.signature || signData?.signatureUrl || signData?.preSignedUrl
+        if (!signedUrl) throw new Error('获取分片签名 URL 失败')
+
+        // 2) 使用 PUT 上传该分片
+        const putResp = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: {
+            // Content-Type 可选，设置更有利于后端校验
+            ...(fileObj.type ? { 'Content-Type': fileObj.type } : {})
+          },
+          body: blob
+        })
+
+        if (!putResp.ok) {
+          const text = await putResp.text().catch(() => '')
+          throw new Error(`分片 ${partNumber} 上传失败: HTTP ${putResp.status} ${text}`)
+        }
+
+        // 3) 从响应头获取 ETag（合并分片时需要）
+        let etag = putResp.headers.get('ETag') || putResp.headers.get('x-etag') || ''
+        etag = etag.replace(/"/g, '')
+
+        // 返回分片信息及大小（用于进度）
+        return { PartNumber: partNumber, ETag: etag, size: blob.size }
+      } catch (err) {
+        lastErr = err
+        console.warn(`分片 ${partNumber} 上传第 ${attempt} 次失败:`, err)
+        // 重试前可等待一会儿（指数退避）
+        await new Promise(r => setTimeout(r, 300 * attempt))
+      }
+    }
+
+    // 如果循环结束仍失败，则抛出最后的错误
+    throw lastErr || new Error(`分片 ${partNumber} 上传失败（超过最大重试次数）`)
+  }
+
+  // 并发上传池
+  const partsResult = new Array(totalChunks) // 保存每片 {PartNumber, ETag, size}
+  let currentPart = 1
+  let active = 0
+
+  await new Promise((resolve, reject) => {
+    const next = () => {
+      // 如果所有分片已分配且没有正在进行的任务，则完成
+      if (currentPart > totalChunks && active === 0) {
+        resolve()
+        return
+      }
+
+      // 启动新的任务直到并发限制
+      while (active < CONCURRENCY && currentPart <= totalChunks) {
+        const partNumber = currentPart++
+        active++
+        uploadPartWithRetry(partNumber)
+          .then((partInfo) => {
+            partsResult[partNumber - 1] = partInfo
+            uploadedBytes += partInfo.size
+            uploadProgress.value = Math.round((uploadedBytes / fileObj.size) * 100)
+            console.log(`分片 ${partNumber}/${totalChunks} 上传成功，已上传 ${uploadedBytes}/${fileObj.size}`)
+          })
+          .catch(async (err) => {
+            console.error('分片上传失败，准备中止上传：', err)
+            // 可选：通知后端中止该 uploadId
+            try {
+              await abortMultipartUpload({ key, uploadId })
+            } catch (e) {
+              console.warn('abortMultipartUpload 失败：', e)
+            }
+            reject(err)
+          })
+          .finally(() => {
+            active--
+            next()
+          })
+      }
+    }
+
+    next()
+  })
+
+  // 所有分片上传成功，partsResult 中包含每片信息
+  const partsList = partsResult.map(p => ({ PartNumber: p.PartNumber, ETag: p.ETag }))
+
+  // 3) 完成分片上传（合并）
+  const completeResp = await completeMultipartUpload({
+    key,
+    uploadId,
+    parts: partsList
+  })
+
+  // 根据后端返回判断是否成功
+  if (!completeResp || (completeResp.data && completeResp.data.code && completeResp.data.code !== 200)) {
+    // 如果后端返回了非 200 逻辑码，抛错
+    const msg = (completeResp && (completeResp.data?.message || completeResp.message)) || '完成分片上传失败'
+    throw new Error(msg)
+  }
+
+  // 修复：从合并响应中提取fileId（分片上传的fileId通常在此阶段生成）
+  // const { fileId } = completeResp.data.data
+  // if (!fileId) {
+  //   throw new Error('分片合并成功，但未返回fileId')
+  // }
+
+  // 更新进度到 100%
+  uploadProgress.value = 100
+  console.log(`大文件 ${uploadFile.name} 分片上传并合并完成`)
 }
 
 // 显示状态消息

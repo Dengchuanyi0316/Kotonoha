@@ -1,9 +1,8 @@
+// src/api/cos.js
 import request from '@/utils/request'
 
 /**
- * 创建临时文件并获取上传签名
- * @param {Object} data - 文件信息（文件名、大小、类型等）
- * @returns {Promise}
+ * 创建临时文件并获取上传签名（单文件直传）
  */
 export function createTempFileAndGetSign(data) {
   return request({
@@ -14,12 +13,56 @@ export function createTempFileAndGetSign(data) {
 }
 
 /**
- * 前端直传文件到COS
- * 注意：这是一个客户端直接调用COS API的函数，不是通过后端代理
- * @param {String} cosUrl - COS上传地址
- * @param {File} file - 要上传的文件
- * @param {Object} signature - 签名信息
- * @returns {Promise}
+ * 创建分片上传签名（初始化分片上传，返回 uploadId、key 等）
+ * 后端应调用 COS InitMultipartUpload，返回 uploadId、key、cosUrl 等
+ */
+export function createMultipartUploadSign(data) {
+  return request({
+    url: '/cos/create-multipart-upload',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 获取单个分片的预签名 URL（前端每个分片上传前调用）
+ * 参数应包含 { key, uploadId, partNumber }
+ * 后端返回单个分片上传用的预签名 URL（PUT）
+ */
+export function signPart(data) {
+  return request({
+    url: '/cos/sign-part',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 完成分片上传（CompleteMultipartUpload），传入 parts 列表
+ * parts: [{ PartNumber: n, ETag: "etag" }, ...]
+ */
+export function completeMultipartUpload(data) {
+  return request({
+    url: '/cos/complete-multipart-upload',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 中止分片上传（AbortMultipartUpload），如需取消上传使用
+ */
+export function abortMultipartUpload(data) {
+  return request({
+    url: '/cos/abort-multipart-upload',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 前端直传文件到COS（表单 POST 的方式，保留你已有实现）
+ * 注意：这个函数示例是你之前给出的，某些后端策略下使用 form 上传
  */
 export async function uploadFileDirectToCOS(cosUrl, file, signature) {
   const formData = new FormData()
@@ -36,9 +79,7 @@ export async function uploadFileDirectToCOS(cosUrl, file, signature) {
 }
 
 /**
- * 提交文件表单并将临时文件转为正式文件
- * @param {Object} data - 包含表单数据和fileId列表
- * @returns {Promise}
+ * 其余文件相关接口（你现有的）
  */
 export function submitFileForm(data) {
   return request({
@@ -47,12 +88,6 @@ export function submitFileForm(data) {
     data
   })
 }
-
-/**
- * 从腾讯COS下载文件
- * @param {String} fileId - 文件ID
- * @returns {Promise}
- */
 export function downloadFileFromCOS(fileId) {
   return request({
     url: `/cos/download/${fileId}`,
@@ -60,12 +95,6 @@ export function downloadFileFromCOS(fileId) {
     responseType: 'blob'
   })
 }
-
-/**
- * 获取文件列表
- * @param {Object} params - 查询参数
- * @returns {Promise}
- */
 export function getCOSFileList(params) {
   return request({
     url: '/cos/files',
@@ -73,37 +102,18 @@ export function getCOSFileList(params) {
     params
   })
 }
-
-/**
- * 获取单个文件信息
- * @param {String} fileId - 文件ID
- * @returns {Promise}
- */
 export function getCOSFileInfo(fileId) {
   return request({
     url: `/cos/file/${fileId}`,
     method: 'get'
   })
 }
-
-/**
- * 删除文件
- * @param {String} fileId - 文件ID
- * @returns {Promise}
- */
 export function deleteCOSFile(fileId) {
   return request({
     url: `/cos/file/${fileId}`,
     method: 'delete'
   })
 }
-
-/**
- * 更新文件信息
- * @param {String} fileId - 文件ID
- * @param {Object} data - 更新数据
- * @returns {Promise}
- */
 export function updateCOSFile(fileId, data) {
   return request({
     url: `/cos/file/${fileId}`,
@@ -111,12 +121,6 @@ export function updateCOSFile(fileId, data) {
     data
   })
 }
-
-/**
- * 获取文件预览URL
- * @param {String} fileId - 文件ID
- * @returns {Promise}
- */
 export function getCOSFilePreviewUrl(fileId) {
   return request({
     url: `/cos/preview/${fileId}`,
